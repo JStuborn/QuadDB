@@ -37,8 +37,6 @@ type Database struct {
 
 // NewDatabase creates a new Database instance.
 func NewDatabase(filename string, aesKey []byte) (*Database, error) {
-	util.Info(fmt.Sprintf("Found database '%s' attempting to decrypt...", filename))
-
 	db := &Database{
 		documents: make(map[string]json.RawMessage),
 		filename:  filename,
@@ -227,8 +225,6 @@ func (db *Database) unpadData(data []byte) []byte {
 }
 
 func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
-	util.Info(fmt.Sprintf("Scanning directory %s", dataDir))
-
 	databases := make(map[string]*Database)
 
 	dbFiles, err := filepath.Glob(filepath.Join(dataDir, "*.qdb"))
