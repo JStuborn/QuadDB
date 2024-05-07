@@ -20,3 +20,5 @@
 # Go workspace file
 go.work
 *.qdb
+aes.temp.txt
+config/config.yaml

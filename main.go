@@ -1,322 +1,123 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
-	"encoding/json"
+	"CyberDefenseEd/QuadDB/routes"
+	"CyberDefenseEd/QuadDB/util"
+	"crypto/rand"
+	"crypto/sha256"
+	"flag"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"path/filepath"
-	"sync"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 )
 
-// Document represents a document in the database.
-type Document struct {
-	Key  string          `json:"key"`
-	Data json.RawMessage `json:"data"`
-}
-
-// Database represents a document-based database.
-type Database struct {
-	documents map[string]json.RawMessage
-	mu        sync.RWMutex
-	filename  string // Filename to store the database
-}
-
-// NewDatabase creates a new instance of a Database.
-func NewDatabase(filename string) (*Database, error) {
-	db := &Database{
-		documents: make(map[string]json.RawMessage),
-		filename:  filename,
-	}
-
-	// Load existing documents from file
-	err := db.loadDocuments()
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
-// loadDocuments loads existing documents from the database file.
-func (db *Database) loadDocuments() error {
-	data, err := os.ReadFile(db.filename)
-	if err != nil {
-		// If file does not exist, it's fine, just return
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-
-	err = json.Unmarshal(data, &db.documents)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// saveDocuments saves all documents to the database file.
-func (db *Database) saveDocuments() error {
-	data, err := json.Marshal(db.documents)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(db.filename, data, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// CreateDocument adds a new document to the database.
-func (db *Database) CreateDocument(key string, data json.RawMessage) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	if _, exists := db.documents[key]; exists {
-		return fmt.Errorf("document with key '%s' already exists", key)
-	}
-
-	db.documents[key] = data
-
-	// Save documents to file
-	err := db.saveDocuments()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ReadDocument retrieves a document from the database.
-func (db *Database) ReadDocument(key string) (json.RawMessage, error) {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
-
-	data, exists := db.documents[key]
-	if !exists {
-		return nil, fmt.Errorf("document with key '%s' not found", key)
-	}
-
-	return data, nil
-}
-
-// UpdateDocument updates an existing document in the database.
-func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	if _, exists := db.documents[key]; !exists {
-		return fmt.Errorf("document with key '%s' not found", key)
-	}
-
-	db.documents[key] = data
-
-	// Save documents to file
-	err := db.saveDocuments()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// DeleteDocument deletes a document from the database.
-func (db *Database) DeleteDocument(key string) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	if _, exists := db.documents[key]; !exists {
-		return fmt.Errorf("document with key '%s' not found", key)
-	}
-
-	delete(db.documents, key)
-
-	// Save documents to file
-	err := db.saveDocuments()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Compress data using gzip
-func compress(data json.RawMessage) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	writer := gzip.NewWriter(buf)
-	_, err := writer.Write(data)
-	if err != nil {
-		return nil, err
-	}
-	writer.Close()
-	return buf.Bytes(), nil
-}
-
-// Decompress data using gzip
-func decompress(compressedData []byte) (json.RawMessage, error) {
-	reader, err := gzip.NewReader(bytes.NewReader(compressedData))
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
-	decompressedData, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-	return json.RawMessage(decompressedData), nil
+type Config struct {
+	Port    int    `yaml:"port"`
+	DataDir string `yaml:"data_dir"`
+	AESKey  string `yaml:"aes_key"`
 }
 
 func main() {
-	// Data directory
-	dataDir := "data"
-	err := os.MkdirAll(dataDir, 0755)
+	var config Config
+	configFile := "./config/config.yaml"
+	if _, err := os.Stat(configFile); err == nil {
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			util.Error("Error reading config file:", err)
+			return
+		}
+		err = yaml.Unmarshal(data, &config)
+		if err != nil {
+			util.Error("Error parsing config file:", err)
+			return
+		}
+
+		util.Info("Found a valid config file, defaulting to that!")
+	} else {
+		// If no config file, default to none
+		config.Port = 0
+		config.DataDir = "./data"
+		config.AESKey = ""
+	}
+
+	// Command-line flags
+	port := flag.Int("port", config.Port, "Port number")
+	dataDir := flag.String("data-dir", config.DataDir, "Directory to store data files")
+	aesKey := flag.String("aes-key", config.AESKey, "AES encryption key")
+	generateAESKey := flag.Bool("generate-aes-key", false, "Generate a new AES key")
+	flag.Parse()
+
+	if *aesKey == "" {
+		util.Error("We need an AES key to encrypt our database!")
+		os.Exit(0)
+	}
+
+	if *generateAESKey {
+		key, err := generateKey()
+		if err != nil {
+			util.Error("Error generating AES key:", err)
+			return
+		}
+		*aesKey = fmt.Sprintf("Generated key: %x", key)
+		err = writeKeyToFile(*aesKey, "aes.temp.txt")
+		if err != nil {
+			util.Error("Error writing AES key to file:", err)
+			return
+		}
+
+		util.Info(fmt.Sprintf("Generated key: %x\nWe saved this key in aes.temp.txt, incase you need it again.\n**You will not be able to recover any data without this key!**", key))
+		os.Exit(0)
+	}
+
+	// Hash the AES key using SHA-256 to allow all strings as keys
+	hash := sha256.New()
+	hash.Write([]byte(*aesKey))
+	aesKeyBytes := hash.Sum(nil)
+
+	util.Info(fmt.Sprintf("Using key hash - %x", aesKeyBytes))
+
+	// Check if AES key is valid
+	if len(aesKeyBytes) != 16 && len(aesKeyBytes) != 24 && len(aesKeyBytes) != 32 {
+		util.Error("Invalid AES key length. Key must be 16, 24, or 32 bytes long.", aesKey)
+		return
+	}
+
+	// Init data directory
+	err := os.MkdirAll(*dataDir, 0755)
 	if err != nil {
 		panic(err)
 	}
 
-	// Initialize databases
-	databases := make(map[string]*Database)
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
 
-	// Initialize Gin router
-	router := gin.Default()
+	// Return 500s instead of panic exiting
+	router.Use(gin.Recovery())
 
-	// REST API endpoints
-	api := router.Group("/api")
-	{
-		api.GET("/documents/:db", func(c *gin.Context) {
-			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
-				return
-			}
+	util.Info("Creating routes...")
+	routes.SetupRoutes(router, *dataDir, aesKeyBytes)
 
-			db.mu.RLock()
-			defer db.mu.RUnlock()
-
-			var allDocuments []Document
-			for key, data := range db.documents {
-				document := Document{
-					Key:  key,
-					Data: data,
-				}
-				allDocuments = append(allDocuments, document)
-			}
-
-			c.JSON(http.StatusOK, allDocuments)
-		})
-
-		api.POST("/documents/:db", func(c *gin.Context) {
-			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				// Create a new database if it doesn't exist
-				dbFile := filepath.Join(dataDir, dbName+".qdb")
-				db, err = NewDatabase(dbFile)
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-					return
-				}
-				databases[dbName] = db
-			}
-
-			var document Document
-			if err := c.ShouldBindJSON(&document); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-
-			if document.Key == "" || document.Data == nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Key and Data fields are required"})
-				return
-			}
-
-			err := db.CreateDocument(document.Key, document.Data)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			c.JSON(http.StatusCreated, gin.H{"message": "Document created successfully"})
-		})
-
-		api.GET("/documents/:db/:key", func(c *gin.Context) {
-			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
-				return
-			}
-
-			key := c.Param("key")
-			data, err := db.ReadDocument(key)
-			if err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{"data": data})
-		})
-
-		api.PUT("/documents/:db/:key", func(c *gin.Context) {
-			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
-				return
-			}
-
-			key := c.Param("key")
-			var newData json.RawMessage
-			if err := c.ShouldBindJSON(&newData); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-
-			err := db.UpdateDocument(key, newData)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{"message": "Document updated successfully"})
-		})
-
-		api.DELETE("/documents/:db/:key", func(c *gin.Context) {
-			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
-				return
-			}
-
-			key := c.Param("key")
-			err := db.DeleteDocument(key)
-			if err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{"message": "Document deleted successfully"})
-		})
+	util.Info(fmt.Sprintf("Quad-Server Started - 127.0.0.1:%d", *port))
+	if err := router.Run(fmt.Sprintf(":%d", *port)); err != nil {
+		fmt.Printf("Error running server: %v\n", err)
+		return
 	}
+}
 
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
+func generateKey() ([]byte, error) {
+	key := make([]byte, 32) // 32 bytes is a good default for AES keys
+	_, err := rand.Read(key)
+	return key, err
+}
 
-	// Start server
-	router.Run(":8080")
+func writeKeyToFile(key string, filename string) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(key)
+	return err
 }
