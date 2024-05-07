@@ -21,7 +21,7 @@ import (
 
 // Document represents a document in the database.
 type Document struct {
-	Id   string          `json:"key"`
+	Id   string          `json:"id"`
 	Data json.RawMessage `json:"data"`
 }
 
