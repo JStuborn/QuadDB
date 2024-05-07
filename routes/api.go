@@ -15,75 +15,60 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Document represents a document in the database.
 type Document struct {
 	Id   string          `json:"id"`
 	Data json.RawMessage `json:"data"`
 }
 
-// Database represents a document-based database.
 type Database struct {
-	documents map[string]json.RawMessage
-	mu        sync.RWMutex // Ensure that this line exists
-	filename  string       // Filename to store the database
-	aesKey    []byte       // AES encryption key
+	filename string
+	aesKey   []byte
 }
 
-// NewDatabase creates a new Database instance.
-func NewDatabase(filename string, aesKey []byte) (*Database, error) {
-	db := &Database{
-		documents: make(map[string]json.RawMessage),
-		filename:  filename,
-		aesKey:    aesKey,
+var (
+	lastUsedDB      string
+	lastUpdateTime  time.Time
+	lastAddedRecord string
+)
+
+func LoadDB(filename string, aesKey []byte) *Database {
+	return &Database{
+		filename: filename,
+		aesKey:   aesKey,
 	}
-
-	err := db.loadDocuments()
-	if err != nil {
-		util.Error(fmt.Sprintf("Failed to decrypt database '%s': invalid password", db.filename))
-		return nil, err
-	}
-
-	err = db.saveDocuments()
-	if err != nil {
-		return nil, err
-	}
-
-	util.Info(fmt.Sprintf("Database '%s' loaded", filename))
-
-	return db, nil
 }
 
-func (db *Database) loadDocuments() error {
+func (db *Database) loadDocuments() (map[string]json.RawMessage, error) {
 	data, err := os.ReadFile(db.filename)
 	if err != nil {
-		// If file does not exist, it's fine (i hope), just return
+		// If file does not exist, return an empty map
 		if os.IsNotExist(err) {
-			return nil
+			return make(map[string]json.RawMessage), nil
 		}
-		return err
+		return nil, err
 	}
 
 	decryptedData, err := db.decrypt(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = json.Unmarshal(decryptedData, &db.documents)
+	var documents map[string]json.RawMessage
+	err = json.Unmarshal(decryptedData, &documents)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return documents, nil
 }
 
-func (db *Database) saveDocuments() error {
-	data, err := json.Marshal(db.documents)
+func (db *Database) saveDocuments(documents map[string]json.RawMessage) error {
+	data, err := json.Marshal(documents)
 	if err != nil {
 		return err
 	}
@@ -102,16 +87,21 @@ func (db *Database) saveDocuments() error {
 }
 
 func (db *Database) CreateDocument(key string, data json.RawMessage) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	documents, err := db.loadDocuments()
+	if err != nil {
+		return err
+	}
 
-	if _, exists := db.documents[key]; exists {
+	if _, exists := documents[key]; exists {
 		return fmt.Errorf("document with key '%s' already exists", key)
 	}
 
-	db.documents[key] = data
+	documents[key] = data
 
-	err := db.saveDocuments()
+	// Update last added record
+	lastAddedRecord = key
+
+	err = db.saveDocuments(documents)
 	if err != nil {
 		return err
 	}
@@ -120,28 +110,39 @@ func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 }
 
 func (db *Database) ReadDocument(key string) (json.RawMessage, error) {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	documents, err := db.loadDocuments()
+	if err != nil {
+		return nil, err
+	}
 
-	data, exists := db.documents[key]
+	data, exists := documents[key]
 	if !exists {
 		return nil, fmt.Errorf("document with key '%s' not found", key)
 	}
+
+	// Update last used database and last update time
+	lastUsedDB = db.filename
+	lastUpdateTime = time.Now()
 
 	return data, nil
 }
 
 func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	documents, err := db.loadDocuments()
+	if err != nil {
+		return err
+	}
 
-	if _, exists := db.documents[key]; !exists {
+	if _, exists := documents[key]; !exists {
 		return fmt.Errorf("document with key '%s' not found", key)
 	}
 
-	db.documents[key] = data
+	documents[key] = data
 
-	err := db.saveDocuments()
+	// Update last update time
+	lastUpdateTime = time.Now()
+
+	err = db.saveDocuments(documents)
 	if err != nil {
 		return err
 	}
@@ -150,16 +151,18 @@ func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 }
 
 func (db *Database) DeleteDocument(key string) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	documents, err := db.loadDocuments()
+	if err != nil {
+		return err
+	}
 
-	if _, exists := db.documents[key]; !exists {
+	if _, exists := documents[key]; !exists {
 		return fmt.Errorf("document with key '%s' not found", key)
 	}
 
-	delete(db.documents, key)
+	delete(documents, key)
 
-	err := db.saveDocuments()
+	err = db.saveDocuments(documents)
 	if err != nil {
 		return err
 	}
@@ -203,7 +206,7 @@ func (db *Database) decrypt(ciphertext []byte) ([]byte, error) {
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(ciphertext, ciphertext)
 
-	// Unpad data and hope it doesnt break
+	// Unpad data
 	ciphertext = db.unpadData(ciphertext)
 
 	return ciphertext, nil
@@ -234,32 +237,29 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 	for _, dbFile := range dbFiles {
 		dbName := strings.TrimSuffix(filepath.Base(dbFile), ".qdb")
-		db, err := NewDatabase(dbFile, aesKey)
-		if err != nil {
-			util.Error(fmt.Sprintf("Failed to load database '%s'", dbFile))
-		}
+		db := LoadDB(dbFile, aesKey)
 		databases[dbName] = db
 	}
 
 	api := router.Group("/api")
 	{
-		api.GET("/documents/:db", func(c *gin.Context) {
+		api.GET("/docs/:db", func(c *gin.Context) {
+			startTime := time.Now()
+
 			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
+			dbFile := filepath.Join(dataDir, dbName+".qdb")
+			db := LoadDB(dbFile, aesKey)
+
+			documents, err := db.loadDocuments()
+			if err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
 				return
 			}
 
-			startTime := time.Now()
-
-			db.mu.RLock()
-			defer db.mu.RUnlock()
-
 			var allDocuments []Document
-			for id, data := range db.documents {
+			for key, data := range documents {
 				document := Document{
-					Id:   id,
+					Id:   key,
 					Data: data,
 				}
 				allDocuments = append(allDocuments, document)
@@ -268,28 +268,15 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			endTime := time.Now()
 			elapsedTime := endTime.Sub(startTime)
 
-			numDocs := len(allDocuments)
-
-			c.JSON(http.StatusOK, gin.H{
-				"_resp":     elapsedTime.String(),
-				"_num":      numDocs,
-				"documents": allDocuments,
-			})
+			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "_num": len(allDocuments), "documents": allDocuments})
 		})
 
-		api.POST("/documents/:db", func(c *gin.Context) {
+		api.POST("/docs/:db", func(c *gin.Context) {
+			startTime := time.Now()
+
 			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				dbFile := filepath.Join(dataDir, dbName+".qdb")
-				newDB, err := NewDatabase(dbFile, []byte(aesKey))
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-					return
-				}
-				databases[dbName] = newDB
-				db = newDB
-			}
+			dbFile := filepath.Join(dataDir, dbName+".qdb")
+			db := LoadDB(dbFile, aesKey)
 
 			var documents []Document
 			if err := c.ShouldBindJSON(&documents); err != nil {
@@ -310,16 +297,18 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				}
 			}
 
-			c.JSON(http.StatusCreated, gin.H{"message": "Documents created successfully"})
+			endTime := time.Now()
+			elapsedTime := endTime.Sub(startTime)
+
+			c.JSON(http.StatusCreated, gin.H{"_resp": elapsedTime.String(), "message": "Documents created successfully"})
 		})
 
-		api.GET("/documents/:db/:key", func(c *gin.Context) {
+		api.GET("/docs/:db/:key", func(c *gin.Context) {
+			startTime := time.Now()
+
 			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
-				return
-			}
+			dbFile := filepath.Join(dataDir, dbName+".qdb")
+			db := LoadDB(dbFile, aesKey)
 
 			key := c.Param("key")
 			data, err := db.ReadDocument(key)
@@ -328,16 +317,18 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				return
 			}
 
-			c.JSON(http.StatusFound, gin.H{"data": data})
+			endTime := time.Now()
+			elapsedTime := endTime.Sub(startTime)
+
+			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "data": data})
 		})
 
-		api.PUT("/documents/:db/:key", func(c *gin.Context) {
+		api.PUT("/docs/:db/:key", func(c *gin.Context) {
+			startTime := time.Now()
+
 			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
-				return
-			}
+			dbFile := filepath.Join(dataDir, dbName+".qdb")
+			db := LoadDB(dbFile, aesKey)
 
 			key := c.Param("key")
 			var newData json.RawMessage
@@ -348,29 +339,48 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 			err := db.UpdateDocument(key, newData)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
 
-			c.JSON(http.StatusAccepted, gin.H{"message": "Document updated successfully"})
+			endTime := time.Now()
+			elapsedTime := endTime.Sub(startTime)
+
+			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "message": "Document updated successfully"})
 		})
 
-		api.DELETE("/documents/:db/:key", func(c *gin.Context) {
+		api.DELETE("/docs/:db/:key", func(c *gin.Context) {
+			startTime := time.Now()
+
 			dbName := c.Param("db")
-			db, exists := databases[dbName]
-			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
-				return
-			}
+			dbFile := filepath.Join(dataDir, dbName+".qdb")
+			db := LoadDB(dbFile, aesKey)
 
 			key := c.Param("key")
 			err := db.DeleteDocument(key)
 			if err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
 
-			c.JSON(http.StatusAccepted, gin.H{"message": "Document deleted successfully"})
+			endTime := time.Now()
+			elapsedTime := endTime.Sub(startTime)
+
+			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "message": "Document deleted successfully"})
+		})
+
+		api.GET("/docs/updates", func(c *gin.Context) {
+			lastUsedDB := lastUsedDB
+			lastUpdateTime := lastUpdateTime.Format(time.RFC3339)
+			lastAddedRecord := lastAddedRecord
+
+			adminInfo := gin.H{
+				"last_used_db":      lastUsedDB,
+				"last_update_time":  lastUpdateTime,
+				"last_added_record": lastAddedRecord,
+			}
+
+			c.JSON(http.StatusOK, adminInfo)
 		})
 	}
 
