@@ -36,13 +36,11 @@ func main() {
 
 		util.Info("Found a valid config file, defaulting to that!")
 	} else {
-		// If no config file, default to none
 		config.Port = 9010
 		config.DataDir = "./data"
 		config.AESKey = ""
 	}
 
-	// Command-line flags
 	port := flag.Int("port", config.Port, "Port number")
 	dataDir := flag.String("data-dir", config.DataDir, "Directory to store data files")
 	aesKey := flag.String("aes-key", config.AESKey, "AES encryption key")
@@ -78,13 +76,11 @@ func main() {
 
 	util.Info(fmt.Sprintf("Using key hash - %x", aesKeyBytes))
 
-	// Check if AES key is valid
 	if len(aesKeyBytes) != 16 && len(aesKeyBytes) != 24 && len(aesKeyBytes) != 32 {
 		util.Error("Invalid AES key length. Key must be 16, 24, or 32 bytes long.", aesKey)
 		return
 	}
 
-	// Init data directory
 	err := os.MkdirAll(*dataDir, 0755)
 	if err != nil {
 		panic(err)
@@ -93,7 +89,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	// Return 500s instead of panic exiting
+	// Return 500s instead of panic exiting because it kills process :sad:
 	router.Use(gin.Recovery())
 
 	util.Info("Creating routes...")

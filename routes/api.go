@@ -43,14 +43,12 @@ func NewDatabase(filename string, aesKey []byte) (*Database, error) {
 		aesKey:    aesKey,
 	}
 
-	// Load existing documents from file
 	err := db.loadDocuments()
 	if err != nil {
 		util.Error(fmt.Sprintf("Failed to decrypt database '%s': invalid password", db.filename))
 		return nil, err
 	}
 
-	// Save the documents to file immediately
 	err = db.saveDocuments()
 	if err != nil {
 		return nil, err
@@ -64,14 +62,13 @@ func NewDatabase(filename string, aesKey []byte) (*Database, error) {
 func (db *Database) loadDocuments() error {
 	data, err := os.ReadFile(db.filename)
 	if err != nil {
-		// If file does not exist, it's fine, just return
+		// If file does not exist, it's fine (i hope), just return
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
 
-	// Decrypt data
 	decryptedData, err := db.decrypt(data)
 	if err != nil {
 		return err
@@ -85,14 +82,12 @@ func (db *Database) loadDocuments() error {
 	return nil
 }
 
-// saveDocuments saves all documents to the database file.
 func (db *Database) saveDocuments() error {
 	data, err := json.Marshal(db.documents)
 	if err != nil {
 		return err
 	}
 
-	// Encrypt data
 	encryptedData, err := db.encrypt(data)
 	if err != nil {
 		return err
@@ -106,7 +101,6 @@ func (db *Database) saveDocuments() error {
 	return nil
 }
 
-// CreateDocument adds a new document to the database.
 func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -117,7 +111,6 @@ func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 
 	db.documents[key] = data
 
-	// Save documents to file
 	err := db.saveDocuments()
 	if err != nil {
 		return err
@@ -126,7 +119,6 @@ func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 	return nil
 }
 
-// ReadDocument retrieves a document from the database.
 func (db *Database) ReadDocument(key string) (json.RawMessage, error) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
@@ -139,7 +131,6 @@ func (db *Database) ReadDocument(key string) (json.RawMessage, error) {
 	return data, nil
 }
 
-// UpdateDocument updates an existing document in the database.
 func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -150,7 +141,6 @@ func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 
 	db.documents[key] = data
 
-	// Save documents to file
 	err := db.saveDocuments()
 	if err != nil {
 		return err
@@ -159,7 +149,6 @@ func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 	return nil
 }
 
-// DeleteDocument deletes a document from the database.
 func (db *Database) DeleteDocument(key string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -170,7 +159,6 @@ func (db *Database) DeleteDocument(key string) error {
 
 	delete(db.documents, key)
 
-	// Save documents to file
 	err := db.saveDocuments()
 	if err != nil {
 		return err
@@ -179,14 +167,12 @@ func (db *Database) DeleteDocument(key string) error {
 	return nil
 }
 
-// Encrypt data using AES
 func (db *Database) encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(db.aesKey)
 	if err != nil {
 		return nil, err
 	}
 
-	// Pad data if necessary
 	data = padData(data, block.BlockSize())
 
 	ciphertext := make([]byte, aes.BlockSize+len(data))
@@ -201,7 +187,6 @@ func (db *Database) encrypt(data []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-// Decrypt data using AES
 func (db *Database) decrypt(ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(db.aesKey)
 	if err != nil {
@@ -218,13 +203,12 @@ func (db *Database) decrypt(ciphertext []byte) ([]byte, error) {
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(ciphertext, ciphertext)
 
-	// Unpad data
+	// Unpad data and hope it doesnt break
 	ciphertext = db.unpadData(ciphertext)
 
 	return ciphertext, nil
 }
 
-// Pad data to be a multiple of blockSize
 func padData(data []byte, blockSize int) []byte {
 	padding := blockSize - (len(data) % blockSize)
 	padText := bytes.Repeat([]byte{byte(padding)}, padding)
@@ -245,14 +229,12 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 	databases := make(map[string]*Database)
 
-	// Create a new database file if it doesn't exist
-	for _, dbName := range []string{"db"} { // Add more database names as needed
+	for _, dbName := range []string{"db"} {
 		dbFile := filepath.Join(dataDir, dbName+".qdb")
 		db, _ := NewDatabase(dbFile, aesKey)
 		databases[dbName] = db
 	}
 
-	// REST API endpoints
 	api := router.Group("/api")
 	{
 		api.GET("/documents/:db", func(c *gin.Context) {
@@ -282,7 +264,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			dbName := c.Param("db")
 			db, exists := databases[dbName]
 			if !exists {
-				// Create a new database if it doesn't exist
 				dbFile := filepath.Join(dataDir, dbName+".qdb")
 				newDB, err := NewDatabase(dbFile, []byte(aesKey))
 				if err != nil {
