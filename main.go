@@ -37,7 +37,7 @@ func main() {
 		util.Info("Found a valid config file, defaulting to that!")
 	} else {
 		// If no config file, default to none
-		config.Port = 0
+		config.Port = 9010
 		config.DataDir = "./data"
 		config.AESKey = ""
 	}
@@ -57,17 +57,17 @@ func main() {
 	if *generateAESKey {
 		key, err := generateKey()
 		if err != nil {
-			util.Error("Error generating AES key:", err)
+			util.Error("Error generating password:", err)
 			return
 		}
-		*aesKey = fmt.Sprintf("Generated key: %x", key)
+		*aesKey = fmt.Sprintf("%x", key)
 		err = writeKeyToFile(*aesKey, "aes.temp.txt")
 		if err != nil {
 			util.Error("Error writing AES key to file:", err)
 			return
 		}
 
-		util.Info(fmt.Sprintf("Generated key: %x\nWe saved this key in aes.temp.txt, incase you need it again.\n**You will not be able to recover any data without this key!**", key))
+		util.Info(fmt.Sprintf("Generated password: %x\nWe saved this key in password.temp.txt, incase you need it again.\n**You will not be able to recover any data without this key!**", key))
 		os.Exit(0)
 	}
 

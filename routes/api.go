@@ -21,7 +21,7 @@ import (
 
 // Document represents a document in the database.
 type Document struct {
-	Key  string          `json:"key"`
+	Id   string          `json:"key"`
 	Data json.RawMessage `json:"data"`
 }
 
@@ -267,9 +267,9 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			defer db.mu.RUnlock()
 
 			var allDocuments []Document
-			for key, data := range db.documents {
+			for id, data := range db.documents {
 				document := Document{
-					Key:  key,
+					Id:   id,
 					Data: data,
 				}
 				allDocuments = append(allDocuments, document)
@@ -293,24 +293,26 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				db = newDB
 			}
 
-			var document Document
-			if err := c.ShouldBindJSON(&document); err != nil {
+			var documents []Document
+			if err := c.ShouldBindJSON(&documents); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
 			}
 
-			if document.Key == "" || document.Data == nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Key and Data fields are required"})
-				return
+			for _, document := range documents {
+				if document.Id == "" || document.Data == nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Key and Data fields are required"})
+					return
+				}
+
+				err := db.CreateDocument(document.Id, document.Data)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
 			}
 
-			err := db.CreateDocument(document.Key, document.Data)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-
-			c.JSON(http.StatusCreated, gin.H{"message": "Document created successfully"})
+			c.JSON(http.StatusCreated, gin.H{"message": "Documents created successfully"})
 		})
 
 		api.GET("/documents/:db/:key", func(c *gin.Context) {

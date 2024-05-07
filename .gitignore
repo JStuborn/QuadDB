@@ -19,6 +19,8 @@
 
 # Go workspace file
 go.work
+
+# Quad Files
 *.qdb
-aes.temp.txt
 config/config.yaml
+temp/*
