@@ -14,7 +14,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -229,9 +231,17 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 	databases := make(map[string]*Database)
 
-	for _, dbName := range []string{"db"} {
-		dbFile := filepath.Join(dataDir, dbName+".qdb")
-		db, _ := NewDatabase(dbFile, aesKey)
+	dbFiles, err := filepath.Glob(filepath.Join(dataDir, "*.qdb"))
+	if err != nil {
+		util.Error("Failed to index qdb files.")
+	}
+
+	for _, dbFile := range dbFiles {
+		dbName := strings.TrimSuffix(filepath.Base(dbFile), ".qdb")
+		db, err := NewDatabase(dbFile, aesKey)
+		if err != nil {
+			util.Error(fmt.Sprintf("Failed to load database '%s'", dbFile))
+		}
 		databases[dbName] = db
 	}
 
@@ -245,6 +255,8 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				return
 			}
 
+			startTime := time.Now()
+
 			db.mu.RLock()
 			defer db.mu.RUnlock()
 
@@ -257,7 +269,16 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				allDocuments = append(allDocuments, document)
 			}
 
-			c.JSON(http.StatusFound, allDocuments)
+			endTime := time.Now()
+			elapsedTime := endTime.Sub(startTime)
+
+			numDocs := len(allDocuments)
+
+			c.JSON(http.StatusOK, gin.H{
+				"_resp":     elapsedTime.String(),
+				"_num":      numDocs,
+				"documents": allDocuments,
+			})
 		})
 
 		api.POST("/documents/:db", func(c *gin.Context) {
