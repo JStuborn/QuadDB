@@ -12,8 +12,6 @@ import (
 )
 
 func RenderTemplate(w http.ResponseWriter, templateName string, title string, data interface{}) {
-	util.Info("./dashboard/templates/pages/" + templateName)
-	// Load base and page templates
 	tmpl, err := template.ParseFiles(
 		"./dashboard/templates/base.html",
 		"./dashboard/templates/pages/"+templateName,
@@ -23,7 +21,6 @@ func RenderTemplate(w http.ResponseWriter, templateName string, title string, da
 		return
 	}
 
-	// Execute template with data
 	err = tmpl.Execute(w, map[string]interface{}{
 		"title": title,
 		"data":  data,
@@ -36,7 +33,6 @@ func RenderTemplate(w http.ResponseWriter, templateName string, title string, da
 }
 
 func SetupDashboardRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
-	// Define route handlers
 	router.GET("/", func(c *gin.Context) {
 		databases := make(map[string]*database.Database)
 
@@ -53,7 +49,6 @@ func SetupDashboardRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			databases[dbName] = db
 		}
 
-		// Render home page with databases data
-		RenderTemplate(c.Writer, "home.html", "My Dashboard", gin.H{"databases": databases})
+		RenderTemplate(c.Writer, "home.html", "Dashboard", gin.H{"databases": databases})
 	})
 }
