@@ -1,4 +1,4 @@
-// compression.go
+// ./util/compression.go
 
 package util
 
