@@ -34,6 +34,7 @@ var (
 	lastUsedDB      string
 	lastUpdateTime  time.Time
 	lastAddedRecord string
+	lastReadRecord  json.RawMessage
 )
 
 func LoadDB(filename string, aesKey []byte) *Database {
@@ -243,6 +244,14 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 	api := router.Group("/api")
 	{
+
+		// @Summary Get documents by database
+		// @Description Retrieve documents from a specific database
+		// @ID get-documents
+		// @Produce json
+		// @Param db path string true "Database name"
+		// @Success 200 {object} gin.H
+		// @Router /api/documents/{db} [get]
 		api.GET("/docs/:db", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -271,6 +280,14 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "_num": len(allDocuments), "documents": allDocuments})
 		})
 
+		// @Summary Create documents
+		// @Description Create documents in a specific database
+		// @ID create-documents
+		// @Accept json
+		// @Produce json
+		// @Param db path string true "Database name"
+		// @Success 201 {object} gin.H
+		// @Router /api/docs/{db} [post]
 		api.POST("/docs/:db", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -303,6 +320,14 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusCreated, gin.H{"_resp": elapsedTime.String(), "message": "Documents created successfully"})
 		})
 
+		// @Summary Get document by key
+		// @Description Retrieve a document by its key from a specific database
+		// @ID get-document-by-key
+		// @Produce json
+		// @Param db path string true "Database name"
+		// @Param key path string true "Document key"
+		// @Success 200 {object} gin.H
+		// @Router /api/docs/{db}/{key} [get]
 		api.GET("/docs/:db/:key", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -317,12 +342,23 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				return
 			}
 
+			lastReadRecord = data
+
 			endTime := time.Now()
 			elapsedTime := endTime.Sub(startTime)
 
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "data": data})
 		})
 
+		// @Summary Update document by key
+		// @Description Update a document by its key in a specific database
+		// @ID update-document-by-key
+		// @Accept json
+		// @Produce json
+		// @Param db path string true "Database name"
+		// @Param key path string true "Document key"
+		// @Success 200 {object} gin.H
+		// @Router /api/docs/{db}/{key} [put]
 		api.PUT("/docs/:db/:key", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -349,6 +385,14 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "message": "Document updated successfully"})
 		})
 
+		// @Summary Delete document by key
+		// @Description Delete a document by its key from a specific database
+		// @ID delete-document-by-key
+		// @Produce json
+		// @Param db path string true "Database name"
+		// @Param key path string true "Document key"
+		// @Success 200 {object} gin.H
+		// @Router /api/docs/{db}/{key} [delete]
 		api.DELETE("/docs/:db/:key", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -369,6 +413,14 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "message": "Document deleted successfully"})
 		})
 
+		// @Summary Get admin information
+		// @Description Retrieve information about the last used database, last update time, last added record, and last read record
+		// @ID get-admin-info
+		// @Produce json
+		// @Success 200 {object} gin.H
+		// @Router /api/docs/updates [get]
+
+		// all stored in memory non-persistant though restarts for security. not encrypted
 		api.GET("/docs/updates", func(c *gin.Context) {
 			lastUsedDB := lastUsedDB
 			lastUpdateTime := lastUpdateTime.Format(time.RFC3339)
@@ -378,6 +430,7 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				"last_used_db":      lastUsedDB,
 				"last_update_time":  lastUpdateTime,
 				"last_added_record": lastAddedRecord,
+				"last_read_record":  lastReadRecord,
 			}
 
 			c.JSON(http.StatusOK, adminInfo)
