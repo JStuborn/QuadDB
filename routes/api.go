@@ -242,7 +242,7 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 		databases[dbName] = db
 	}
 
-	api := router.Group("/api")
+	api := router.Group("/api/v1")
 	{
 
 		// @Summary Get documents by database

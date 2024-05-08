@@ -94,6 +94,7 @@ func main() {
 
 	util.Info("Creating routes...")
 	routes.SetupRoutes(router, *dataDir, aesKeyBytes)
+	routes.RegisterSwaggerRoutes(router)
 
 	util.Info(fmt.Sprintf("Quad-Server Started - 127.0.0.1:%d", *port))
 	if err := router.Run(fmt.Sprintf(":%d", *port)); err != nil {
