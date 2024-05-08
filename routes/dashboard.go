@@ -1,11 +1,7 @@
 package routes
 
 import (
-	"CyberDefenseEd/QuadDB/database"
-	"CyberDefenseEd/QuadDB/util"
 	"net/http"
-	"path/filepath"
-	"strings"
 	"text/template"
 
 	"github.com/gin-gonic/gin"
@@ -34,21 +30,6 @@ func RenderTemplate(w http.ResponseWriter, templateName string, title string, da
 
 func SetupDashboardRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 	router.GET("/", func(c *gin.Context) {
-		databases := make(map[string]*database.Database)
-
-		dbFiles, err := filepath.Glob(filepath.Join(dataDir, "*.qdb"))
-		if err != nil {
-			util.Error("Failed to index qdb files.")
-			http.Error(c.Writer, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		for _, dbFile := range dbFiles {
-			dbName := strings.TrimSuffix(filepath.Base(dbFile), ".qdb")
-			db := database.LoadDB(dbFile, aesKey)
-			databases[dbName] = db
-		}
-
-		RenderTemplate(c.Writer, "home.html", "Dashboard", gin.H{"databases": databases})
+		RenderTemplate(c.Writer, "home.html", "Dashboard", gin.H{})
 	})
 }

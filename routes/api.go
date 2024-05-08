@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,7 +48,32 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			dbFile := filepath.Join(dataDir, dbName+".qdb")
 			db := database.LoadDB(dbFile, aesKey)
 
-			documents, err := db.LoadDocuments()
+			// Get page and size query parameters
+			page := c.DefaultQuery("page", "1")
+			size := c.Query("size")
+
+			// Default to 5 records per page if size is not provided or invalid
+			pageSize := 5
+			if size != "" {
+				// Parse size parameter
+				newSize, err := strconv.Atoi(size)
+				if err == nil && newSize > 0 {
+					pageSize = newSize
+				}
+			}
+
+			// Calculate offset based on page number and page size
+			offset, err := strconv.Atoi(page)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
+				return
+			}
+			if offset <= 0 {
+				offset = 1
+			}
+			offset = (offset - 1) * pageSize
+
+			documents, err := db.LoadDocumentsPaginated(offset, pageSize)
 			if err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Database not found"})
 				return
@@ -219,6 +245,21 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			}
 
 			c.JSON(http.StatusOK, adminInfo)
+		})
+
+		api.GET("/docs/collections", func(c *gin.Context) {
+			collections := make(map[string]int)
+
+			for dbName, db := range databases {
+				count, err := db.CountDocuments()
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+				collections[dbName] = count
+			}
+
+			c.JSON(http.StatusOK, collections)
 		})
 	}
 

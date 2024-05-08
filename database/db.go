@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -57,6 +58,57 @@ func (db *Database) LoadDocuments() (map[string]json.RawMessage, error) {
 	}
 
 	return documents, nil
+}
+
+func (db *Database) LoadDocumentsPaginated(offset, limit int) (map[string]json.RawMessage, error) {
+	data, err := os.ReadFile(db.filename)
+	if err != nil {
+		// If file does not exist, return an empty map
+		if os.IsNotExist(err) {
+			return make(map[string]json.RawMessage), nil
+		}
+		return nil, err
+	}
+
+	decryptedData, err := db.decrypt(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decompress the data (only when needed)
+	decompressedData, err := util.Decompress(decryptedData)
+	if err != nil {
+		return nil, err
+	}
+
+	var documents map[string]json.RawMessage
+	err = json.Unmarshal(decompressedData, &documents)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply pagination
+	paginatedDocuments := make(map[string]json.RawMessage)
+	keys := make([]string, 0, len(documents))
+	for key := range documents {
+		keys = append(keys, key)
+	}
+
+	// Sort keys for consistency
+	sort.Strings(keys)
+
+	// Calculate end index
+	end := offset + limit
+	if end > len(keys) {
+		end = len(keys)
+	}
+
+	// Extract documents for the requested page
+	for _, key := range keys[offset:end] {
+		paginatedDocuments[key] = documents[key]
+	}
+
+	return paginatedDocuments, nil
 }
 
 func (db *Database) saveDocuments(documents map[string]json.RawMessage) error {
@@ -166,6 +218,14 @@ func (db *Database) DeleteDocument(key string) error {
 	}
 
 	return nil
+}
+
+func (db *Database) CountDocuments() (int, error) {
+	documents, err := db.LoadDocuments()
+	if err != nil {
+		return 0, err
+	}
+	return len(documents), nil
 }
 
 func (db *Database) encrypt(data []byte) ([]byte, error) {
