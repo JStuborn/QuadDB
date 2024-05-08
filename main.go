@@ -2,8 +2,8 @@ package main
 
 import (
 	"CyberDefenseEd/QuadDB/routes"
+	"CyberDefenseEd/QuadDB/types"
 	"CyberDefenseEd/QuadDB/util"
-	"crypto/rand"
 	"crypto/sha256"
 	"flag"
 	"fmt"
@@ -13,14 +13,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	Port    int    `yaml:"port"`
-	DataDir string `yaml:"data_dir"`
-	AESKey  string `yaml:"aes_key"`
-}
-
 func main() {
-	var config Config
+	var config types.Config
 	configFile := "./config/config.yaml"
 	if _, err := os.Stat(configFile); err == nil {
 		data, err := os.ReadFile(configFile)
@@ -33,7 +27,6 @@ func main() {
 			util.Error("Error parsing config file:", err)
 			return
 		}
-
 		util.Info("Found a valid config file, defaulting to that!")
 	} else {
 		config.Port = 9010
@@ -53,18 +46,17 @@ func main() {
 	}
 
 	if *generateAESKey {
-		key, err := generateKey()
+		key, err := util.GenerateKey()
 		if err != nil {
 			util.Error("Error generating password:", err)
 			return
 		}
 		*aesKey = fmt.Sprintf("%x", key)
-		err = writeKeyToFile(*aesKey, "aes.temp.txt")
+		err = util.WriteKeyToFile(*aesKey, "aes.temp.txt")
 		if err != nil {
 			util.Error("Error writing AES key to file:", err)
 			return
 		}
-
 		util.Info(fmt.Sprintf("Generated password: %x\nWe saved this key in password.temp.txt, incase you need it again.\n**You will not be able to recover any data without this key!**", key))
 		os.Exit(0)
 	}
@@ -86,14 +78,17 @@ func main() {
 		panic(err)
 	}
 
-	gin.SetMode(gin.ReleaseMode)
+	// gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	// Return 500s instead of panic exiting because it kills process :sad:
+	// Return 500s instead of fucking dying
 	router.Use(gin.Recovery())
+
+	router.Static("/assets", "./dashboard/assets")
 
 	util.Info("Creating routes...")
 	routes.SetupRoutes(router, *dataDir, aesKeyBytes)
+	routes.SetupDashboardRoutes(router, *dataDir, aesKeyBytes)
 	routes.RegisterSwaggerRoutes(router)
 
 	util.Info(fmt.Sprintf("Quad-Server Started - 127.0.0.1:%d", *port))
@@ -101,20 +96,4 @@ func main() {
 		fmt.Printf("Error running server: %v\n", err)
 		return
 	}
-}
-
-func generateKey() ([]byte, error) {
-	key := make([]byte, 32) // 32 bytes is a good default for AES keys
-	_, err := rand.Read(key)
-	return key, err
-}
-
-func writeKeyToFile(key string, filename string) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.WriteString(key)
-	return err
 }
