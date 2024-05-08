@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>QuadDB - Dashboard</title>
+        <title>QuadDB - {{.title}}</title>
         <link rel="stylesheet" href="/assets/main.css">
     </head>
     <body>
@@ -78,21 +78,17 @@
                             </svg>
                         </div>
                         <div class="mt-3 space-y-4">
-                            <button class="flex relative flex-col p-3 w-full rounded-md border shadow-lg focus:outline-none card border-primary glow">
-                                <div class="flex flex-col items-center pb-2 mb-2 w-full text-white font-sm xl:flex-row"> [title] </div>
-                                <div class="flex items-center w-full">
-                                    <div class="px-2 py-1 text-xs leading-none rounded-md border pill border-primary">[file-type]</div>
-                                    <div class="ml-auto text-xs text-gray-500">[count] Records</div>
-                                </div>
-                            </button>
+                        
+                            {{range $dbName, $db := .data.databases}}
+                                <button class="flex relative flex-col p-3 w-full rounded-md border shadow-lg focus:outline-none card card-border">
+                                    <div class="flex flex-col items-center pb-2 mb-2 w-full text-white font-sm xl:flex-row"> {{$dbName}} </div>
+                                    <div class="flex items-center w-full">
+                                        <div class="px-2 py-1 text-xs leading-none rounded-md border pill border-primary">[file-type]</div>
+                                        <div class="ml-auto text-xs text-gray-500">[count] Records</div>
+                                    </div>
+                                </button>
+                            {{end}}
 
-                            <button class="flex relative flex-col p-3 w-full rounded-md border shadow-lg focus:outline-none card card-border">
-                                <div class="flex flex-col items-center pb-2 mb-2 w-full text-white font-sm xl:flex-row"> [title] </div>
-                                <div class="flex items-center w-full">
-                                    <div class="px-2 py-1 text-xs leading-none rounded-md border border-error text-error">[disabled]</div>
-                                    <div class="ml-auto text-xs text-gray-500">[count] Records</div>
-                                </div>
-                            </button>
                         </div>
                     </div>
                     <div class="overflow-y-auto flex-grow bg-gray-900 bg-main">
