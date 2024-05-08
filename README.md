@@ -1,10 +1,10 @@
-# QuadDB
+# Quadrium Database
 
 *Please note that this project is still under development and may not be suitable for production use. Contributions and feedback are welcome!*
 
 
 This project is an **experimental** database management system (DBMS) developed in Go (Golang), tailored to proficiently manage NoSQL queries. 
-It offers fundamental features including:
+Quadrium (QuadDB) offers fundamental features including:
 - [x] Default AES encryption for database collections.
 - [x] Full configurability across all parameters including:
    - [x] Server Port 
