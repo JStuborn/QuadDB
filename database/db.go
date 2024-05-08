@@ -23,7 +23,6 @@ type Database struct {
 }
 
 func LoadDB(filename string, aesKey []byte) *Database {
-	util.Info("Found Database")
 	return &Database{
 		filename: filename,
 		aesKey:   aesKey,

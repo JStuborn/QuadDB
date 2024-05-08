@@ -6,6 +6,7 @@ import (
 	"CyberDefenseEd/QuadDB/database"
 	"CyberDefenseEd/QuadDB/util"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,7 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 		dbName := strings.TrimSuffix(filepath.Base(dbFile), ".qdb")
 		db := database.LoadDB(dbFile, aesKey)
 		databases[dbName] = db
+		util.Info(fmt.Sprintf("Imported Database - %s.qdb", dbName))
 	}
 
 	api := router.Group("/api/v1")
