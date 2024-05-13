@@ -24,7 +24,7 @@ function fetchData(collectionName, count, page) {
                 fileTypeTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
                 fileTypeTd.innerHTML = `
                     <div class="flex items-center">
-                        <svg class="p-1.5 mr-2.5 w-7 h-7 rounded-lg border border-main" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-json-2">
+                        <svg class="p-1.5 mr-2.5 w-7 h-7 rounded-lg border border-main bg-sec" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-json-2">
                             <path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4" />
                             <path d="M14 2v4a2 2 0 0 0 2 2h4" />
                             <path d="M4 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1" />
@@ -41,10 +41,10 @@ function fetchData(collectionName, count, page) {
                 const contentTd = document.createElement('td');
                 contentTd.className = 'hidden px-1 py-2 border-b sm:p-3 border-main md:table-cell';
 
-                if (doc.length > 10) {
+                if (doc.length > 5) {
                     contentTd.innerHTML = `<code>${JSON.stringify(doc)}</code>`;
                 } else {
-                    contentTd.innerHTML = `<code>Data to large to view</code>`;
+                    contentTd.innerHTML = `<code>${Object.keys(doc.data).length}</code>`;
                 }
 
                 const dateAddedTd = document.createElement('td');
