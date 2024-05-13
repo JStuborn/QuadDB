@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -277,4 +278,69 @@ func (db *Database) unpadData(data []byte) []byte {
 		return nil
 	}
 	return data[:(length - unpadding)]
+}
+
+// FetchDocumentsByFieldValue fetches documents where a specific nested field matches a given value.
+func (db *Database) FetchDocumentsByFieldValue(fieldPath string, value string) (map[string]json.RawMessage, error) {
+	documents, err := db.LoadDocuments()
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize a map to store matching documents
+	matchingDocuments := make(map[string]json.RawMessage)
+
+	// Iterate through each document
+	for key, rawMessage := range documents {
+		// Unmarshal the raw message into a map
+		var docMap map[string]interface{}
+		err := json.Unmarshal(rawMessage, &docMap)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if the document contains the specified field
+		fieldValue, found := traverseNestedFields(strings.Split(fieldPath, "."), docMap)
+		if found && fieldValue == value {
+			// If the field value matches the desired value, add the document to the matching documents
+			matchingDocuments[key] = rawMessage
+		}
+	}
+
+	return matchingDocuments, nil
+}
+
+// Helper function to traverse nested fields of a document
+func traverseNestedFields(fields []string, fieldValue interface{}) (string, bool) {
+	// Traverse each field in the path
+	for _, field := range fields {
+		switch value := fieldValue.(type) {
+		case map[string]interface{}:
+			// Check if the current field exists in the document map
+			fieldValue, found := value[field]
+			if !found {
+				return "", false // Field not found
+			}
+		case []interface{}:
+			// If the field value is a slice, attempt to find the field value in each element of the slice
+			var sliceValues []string
+			for _, elem := range value {
+				if elemMap, ok := elem.(map[string]interface{}); ok {
+					if val, ok := elemMap[field]; ok {
+						sliceValues = append(sliceValues, fmt.Sprintf("%v", val))
+					}
+				}
+			}
+			// If sliceValues is not empty, return the concatenated values as a comma-separated string
+			if len(sliceValues) > 0 {
+				return strings.Join(sliceValues, ","), true
+			}
+			return "", false // Field not found in the slice
+		default:
+			return "", false // Invalid type for nested field
+		}
+	}
+
+	// Return the value of the last field in the path
+	return fmt.Sprintf("%v", fieldValue), true
 }

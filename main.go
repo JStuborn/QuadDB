@@ -84,6 +84,13 @@ func main() {
 	// Return 500s instead of fucking dying
 	router.Use(gin.Recovery())
 
+	router.Use(func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "Thu, 01 Jan 1970 00:00:00 GMT")
+		c.Next()
+	})
+
 	router.Static("/assets", "./dashboard/assets")
 
 	util.Info("Creating routes...")

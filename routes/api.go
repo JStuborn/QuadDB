@@ -33,7 +33,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 	api := router.Group("/api/v1")
 	{
-
 		// @Summary Get documents by database
 		// @Description Retrieve documents from a specific database
 		// @ID get-documents
@@ -132,6 +131,54 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			elapsedTime := endTime.Sub(startTime)
 
 			c.JSON(http.StatusCreated, gin.H{"_resp": elapsedTime.String(), "message": "Documents created successfully"})
+		})
+
+		// @Summary Search documents by field value
+		// @Description Search documents in a specific database by a field value
+		// @ID search-documents
+		// @Produce json
+		// @Param db path string true "Database name"
+		// @Param field query string true "Field name to search"
+		// @Param value query string true "Value to search for"
+		// @Success 200 {object} gin.H
+		// @Router /api/docs/{db}/search [get]
+		api.GET("/docs/:db/search", func(c *gin.Context) {
+			startTime := time.Now()
+
+			dbName := c.Param("db")
+			dbFile := filepath.Join(dataDir, dbName+".qdb")
+			db := database.LoadDB(dbFile, aesKey)
+
+			// Get the field and value from query parameters
+			field := c.Query("field")
+			value := c.Query("value")
+
+			// Check if field and value are provided
+			if field == "" || value == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Field and value parameters are required"})
+				return
+			}
+
+			// Call the FetchDocumentsByFieldValue function to search documents
+			matchingDocuments, err := db.FetchDocumentsByFieldValue(field, value)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			var allDocuments []database.Document
+			for key, data := range matchingDocuments {
+				document := database.Document{
+					Id:   key,
+					Data: data,
+				}
+				allDocuments = append(allDocuments, document)
+			}
+
+			endTime := time.Now()
+			elapsedTime := endTime.Sub(startTime)
+
+			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "_num": len(allDocuments), "documents": allDocuments})
 		})
 
 		// @Summary Get document by key
