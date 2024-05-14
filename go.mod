@@ -32,7 +32,7 @@ require (
 )
 
 require (
-	github.com/fatih/color v1.16.0 // direct
+	github.com/fatih/color v1.17.0 // direct
 	github.com/mattn/go-colorable v0.1.13 // indirect
 )
 
