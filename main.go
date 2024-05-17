@@ -78,7 +78,7 @@ func main() {
 		panic(err)
 	}
 
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
 	// Return 500s instead of fucking dying
