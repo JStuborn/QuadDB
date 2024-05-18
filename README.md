@@ -28,8 +28,5 @@ The .qdb extension is used for files that store JSONL (JSON Lines) data, where e
 
 Together, these processes provide a secure and efficient way to store JSONL data, making the .qdb extension suitable for applications that require both data protection and optimization of storage space.
 
-## Planned Functionalities
-Planned features have been moved [here](https://github.com/CyberDefenseEd/QuadDB/markdown/FUTURE.md)
-
-## API Docs
-API docs have been moved [here](https://github.com/CyberDefenseEd/QuadDB/markdown/REST.md)
+## Planned Functionalities & Rest API
+Both have been moved to our wiki [here](https://github.com/CyberDefenseEd/QuadDB/wiki)
