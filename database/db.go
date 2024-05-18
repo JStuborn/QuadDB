@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -29,6 +30,17 @@ func LoadDB(filename string, aesKey []byte) *Database {
 		filename: filename,
 		aesKey:   aesKey,
 	}
+}
+
+func validatePath(basePath, userPath string) (string, error) {
+	cleanedPath := filepath.Clean(userPath)
+	fullPath := filepath.Join(basePath, cleanedPath)
+
+	if !strings.HasPrefix(fullPath, filepath.Clean(basePath)+string(os.PathSeparator)) {
+		return "", fmt.Errorf("invalid path")
+	}
+
+	return fullPath, nil
 }
 
 func (db *Database) LoadDocuments() (map[string]json.RawMessage, error) {

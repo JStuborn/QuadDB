@@ -10,57 +10,23 @@
 
 Quadrium (a.k.a QuadDB) is an experimental database management system (DBMS) developed in Go (Golang), tailored to proficiently manage NoSQL queries.
 
-## Features
+## Current Features
 
 - **Default AES Encryption**: QuadDB offers default AES encryption for database collections, ensuring data security.
 - **Configurability**: Full configurability across all parameters, including server port, AES password key, and data storage directory.
 - **Document-Oriented Format**: Support for storing and querying JSON documents in a document-oriented database format.
 - **GZ Compression**: Built-in GZ compression functionality for optimized storage.
+- **Admin Dashboard**: A simple admin dashboard for viewing record counts and collections.
+
+## What is the QDB extention?
+The .qdb extension is used for files that store JSONL (JSON Lines) data, where each line is a separate JSON object. To ensure data security and efficient storage, these files undergo two key processes:
+
+1. **AES Encryption**
+   - The JSONL data is encrypted using the Advanced Encryption Standard (AES), a widely recognized encryption standard that provides robust security for sensitive information. This ensures that the data is protected from unauthorized access and tampering.
+2. **GZip Compression**
+   - After encryption, the data is compressed using the GZip compression method. GZip is a popular compression algorithm that reduces the file size, making it easier to store and transfer while maintaining the integrity of the original data.
+
+Together, these processes provide a secure and efficient way to store JSONL data, making the .qdb extension suitable for applications that require both data protection and optimization of storage space.
 
 ## Planned Functionalities
-
-1. **Authentication and Authorization**:
-   - Implement user authentication and authorization mechanisms.
-   - Allow users to create accounts, log in, and manage permissions.
-
-2. **Indexing**:
-   - Add support for indexing specific fields within JSON documents.
-   - Implement indexing mechanisms such as B-tree or hash indexes.
-
-3. **Backup and Restore**:
-   - Provide functionality to create backups of databases and restore them.
-   - Support automated backup schedules and retention policies.
-
-4. **Replication and Sharding**:
-   - Implement database replication for fault tolerance and high availability.
-   - Introduce sharding capabilities for horizontal scalability.
-
-5. **Query Language Enhancements**:
-   - Extend the query language to support more complex operations.
-   - Improve query optimization techniques.
-
-6. **Monitoring and Logging**:
-   - Integrate monitoring tools to track database performance metrics.
-   - Enable logging functionality for auditing purposes.
-
-7. **Data Validation and Schema Enforcement**:
-   - Implement data validation rules to ensure data integrity.
-   - Enforce schema constraints for data validation.
-
-8. **Clustering and Load Balancing**:
-   - Introduce clustering support for improved scalability.
-   - Implement load balancing mechanisms for distributing client requests.
-
-9. **Dockerization and Orchestration**:
-   - Dockerize the QuadDB application for simplified deployment.
-   - Provide support for container orchestration platforms such as Kubernetes.
-
-10. **Advanced Encryption Options**:
-    - Extend encryption capabilities to support any string converted to SHA256.
-    - Allow users to choose encryption key management options for enhanced security.
-
-## Get Started
-
-To get started with QuadDB, visit the [GitHub repository](https://github.com/CyberDefenseEd/QuadDB) and follow the installation instructions.
-
-Your feedback and contributions are valuable! Feel free to open issues or pull requests on GitHub.
+Planned features have been moved [here](https://github.com/CyberDefenseEd/QuadDB/FUTURE.md)
