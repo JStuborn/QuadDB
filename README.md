@@ -14,9 +14,10 @@ Quadrium (a.k.a QuadDB) is an experimental database management system (DBMS) dev
 
 - **Default AES Encryption**: QuadDB offers default AES encryption for database collections, ensuring data security.
 - **Configurability**: Full configurability across all parameters, including server port, AES password key, and data storage directory.
-- **Document-Oriented Format**: Support for storing and querying JSON documents in a document-oriented database format.
+- **Document-Oriented Format**: Support for storing and querying [msgpack](https://github.com/vmihailenco/msgpack) documents in a document-oriented database format.
 - **GZ Compression**: Built-in GZ compression functionality for optimized storage.
 - **Admin Dashboard**: A simple admin dashboard for viewing record counts and collections.
+- **UID Randomization**: Simple and blazing fast UUID4 generation for document key:value pairs.
 
 ## What is the QDB extention?
 The .qdb extension is used for files that store JSONL (JSON Lines) data, where each line is a separate JSON object. To ensure data security and efficient storage, these files undergo two key processes:

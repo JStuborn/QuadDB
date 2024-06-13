@@ -13,6 +13,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type Document struct {
@@ -25,6 +28,7 @@ type Database struct {
 	aesKey   []byte
 }
 
+// LoadDB initializes a new Database instance
 func LoadDB(filename string, aesKey []byte) *Database {
 	return &Database{
 		filename: filename,
@@ -32,6 +36,7 @@ func LoadDB(filename string, aesKey []byte) *Database {
 	}
 }
 
+// validatePath ensures the provided userPath is within the basePath directory
 func validatePath(basePath, userPath string) (string, error) {
 	cleanedPath := filepath.Clean(userPath)
 	fullPath := filepath.Join(basePath, cleanedPath)
@@ -43,10 +48,10 @@ func validatePath(basePath, userPath string) (string, error) {
 	return fullPath, nil
 }
 
+// LoadDocuments reads and decrypts the database file, returning the documents as a map
 func (db *Database) LoadDocuments() (map[string]json.RawMessage, error) {
 	data, err := os.ReadFile(db.filename)
 	if err != nil {
-		// If file does not exist, return an empty map
 		if os.IsNotExist(err) {
 			return make(map[string]json.RawMessage), nil
 		}
@@ -58,14 +63,13 @@ func (db *Database) LoadDocuments() (map[string]json.RawMessage, error) {
 		return nil, err
 	}
 
-	// Decompress the data (only when needed)
 	decompressedData, err := util.Decompress(decryptedData)
 	if err != nil {
 		return nil, err
 	}
 
 	var documents map[string]json.RawMessage
-	err = json.Unmarshal(decompressedData, &documents)
+	err = msgpack.Unmarshal(decompressedData, &documents)
 	if err != nil {
 		return nil, err
 	}
@@ -73,50 +77,26 @@ func (db *Database) LoadDocuments() (map[string]json.RawMessage, error) {
 	return documents, nil
 }
 
+// LoadDocumentsPaginated reads and decrypts the database file and returns a paginated subset of documents
 func (db *Database) LoadDocumentsPaginated(offset, limit int) (map[string]json.RawMessage, error) {
-	data, err := os.ReadFile(db.filename)
-	if err != nil {
-		// If file does not exist, return an empty map
-		if os.IsNotExist(err) {
-			return make(map[string]json.RawMessage), nil
-		}
-		return nil, err
-	}
-
-	decryptedData, err := db.decrypt(data)
+	documents, err := db.LoadDocuments()
 	if err != nil {
 		return nil, err
 	}
 
-	// Decompress the data (only when needed)
-	decompressedData, err := util.Decompress(decryptedData)
-	if err != nil {
-		return nil, err
-	}
-
-	var documents map[string]json.RawMessage
-	err = json.Unmarshal(decompressedData, &documents)
-	if err != nil {
-		return nil, err
-	}
-
-	// Apply pagination
 	paginatedDocuments := make(map[string]json.RawMessage)
 	keys := make([]string, 0, len(documents))
 	for key := range documents {
 		keys = append(keys, key)
 	}
 
-	// Sort keys for consistency
 	sort.Strings(keys)
 
-	// Calculate end index
 	end := offset + limit
 	if end > len(keys) {
 		end = len(keys)
 	}
 
-	// Extract documents for the requested page
 	for _, key := range keys[offset:end] {
 		paginatedDocuments[key] = documents[key]
 	}
@@ -124,13 +104,13 @@ func (db *Database) LoadDocumentsPaginated(offset, limit int) (map[string]json.R
 	return paginatedDocuments, nil
 }
 
+// saveDocuments compresses, encrypts, and writes the documents map to the database file
 func (db *Database) saveDocuments(documents map[string]json.RawMessage) error {
-	data, err := json.Marshal(documents)
+	data, err := msgpack.Marshal(documents)
 	if err != nil {
 		return err
 	}
 
-	// Compress the data before encryption
 	compressedData, err := util.Compress(data)
 	if err != nil {
 		return err
@@ -149,10 +129,15 @@ func (db *Database) saveDocuments(documents map[string]json.RawMessage) error {
 	return nil
 }
 
+// CreateDocument adds a new document with a unique key; generates a UUID if the key is empty
 func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 	documents, err := db.LoadDocuments()
 	if err != nil {
 		return err
+	}
+
+	if key == "" {
+		key = uuid.New().String()
 	}
 
 	if _, exists := documents[key]; exists {
@@ -160,8 +145,6 @@ func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 	}
 
 	documents[key] = data
-
-	// Update last added record
 	LastUsedDB = key
 
 	err = db.saveDocuments(documents)
@@ -172,6 +155,7 @@ func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 	return nil
 }
 
+// ReadDocument retrieves a document by key
 func (db *Database) ReadDocument(key string) (json.RawMessage, error) {
 	documents, err := db.LoadDocuments()
 	if err != nil {
@@ -183,13 +167,13 @@ func (db *Database) ReadDocument(key string) (json.RawMessage, error) {
 		return nil, fmt.Errorf("document with key '%s' not found", key)
 	}
 
-	// Update last used database and last update time
 	LastUsedDB = db.filename
 	LastUpdateTime = time.Now()
 
 	return data, nil
 }
 
+// UpdateDocument modifies an existing document by key
 func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 	documents, err := db.LoadDocuments()
 	if err != nil {
@@ -201,8 +185,6 @@ func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 	}
 
 	documents[key] = data
-
-	// Update last update time
 	LastUpdateTime = time.Now()
 
 	err = db.saveDocuments(documents)
@@ -213,6 +195,7 @@ func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 	return nil
 }
 
+// DeleteDocument removes a document by key
 func (db *Database) DeleteDocument(key string) error {
 	documents, err := db.LoadDocuments()
 	if err != nil {
@@ -233,6 +216,7 @@ func (db *Database) DeleteDocument(key string) error {
 	return nil
 }
 
+// CountDocuments returns the number of documents in the database
 func (db *Database) CountDocuments() (int, error) {
 	documents, err := db.LoadDocuments()
 	if err != nil {
@@ -241,6 +225,7 @@ func (db *Database) CountDocuments() (int, error) {
 	return len(documents), nil
 }
 
+// encrypt encrypts data using AES in CBC mode
 func (db *Database) encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(db.aesKey)
 	if err != nil {
@@ -261,6 +246,7 @@ func (db *Database) encrypt(data []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+// decrypt decrypts data using AES in CBC mode
 func (db *Database) decrypt(ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(db.aesKey)
 	if err != nil {
@@ -277,12 +263,12 @@ func (db *Database) decrypt(ciphertext []byte) ([]byte, error) {
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(ciphertext, ciphertext)
 
-	// Unpad data
 	ciphertext = db.unpadData(ciphertext)
 
 	return ciphertext, nil
 }
 
+// unpadData removes padding from the decrypted data
 func (db *Database) unpadData(data []byte) []byte {
 	length := len(data)
 	unpadding := int(data[length-1])
@@ -292,7 +278,7 @@ func (db *Database) unpadData(data []byte) []byte {
 	return data[:(length - unpadding)]
 }
 
-// FetchDocumentsByFieldValue fetches documents where a specific nested field matches a given value.
+// FetchDocumentsByFieldValue returns documents matching a specified field value
 func (db *Database) FetchDocumentsByFieldValue(fieldPath string, value string) (map[string]json.RawMessage, error) {
 	documents, err := db.LoadDocuments()
 	if err != nil {
@@ -302,7 +288,6 @@ func (db *Database) FetchDocumentsByFieldValue(fieldPath string, value string) (
 	matchingDocuments := make(map[string]json.RawMessage)
 
 	for key, rawMessage := range documents {
-		// Unmarshal the raw message into a map or else it breaks
 		var docMap map[string]interface{}
 		err := json.Unmarshal(rawMessage, &docMap)
 		if err != nil {
@@ -318,6 +303,7 @@ func (db *Database) FetchDocumentsByFieldValue(fieldPath string, value string) (
 	return matchingDocuments, nil
 }
 
+// traverseNestedFields retrieves a nested field value from a document map
 func traverseNestedFields(fields []string, docMap map[string]interface{}) (string, bool) {
 	var fieldValue interface{} = docMap
 	var found bool

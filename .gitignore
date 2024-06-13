@@ -24,3 +24,4 @@ go.work
 *.qdb
 config/config.yaml
 temp/*
+QuadDB

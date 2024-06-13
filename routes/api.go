@@ -33,13 +33,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 	api := router.Group("/api/v1")
 	{
-		// @Summary Get documents by database
-		// @Description Retrieve documents from a specific database
-		// @ID get-documents
-		// @Produce json
-		// @Param db path string true "Database name"
-		// @Success 200 {object} gin.H
-		// @Router /api/documents/{db} [get]
 		api.GET("/docs/:db", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -47,21 +40,17 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			dbFile := filepath.Join(dataDir, dbName+".qdb")
 			db := database.LoadDB(dbFile, aesKey)
 
-			// Get page and size query parameters
 			page := c.DefaultQuery("page", "1")
 			size := c.Query("size")
 
-			// Default to 5 records per page if size is not provided or invalid
 			pageSize := 5
 			if size != "" {
-				// Parse size parameter
 				newSize, err := strconv.Atoi(size)
 				if err == nil && newSize > 0 {
 					pageSize = newSize
 				}
 			}
 
-			// Calculate offset based on page number and page size
 			offset, err := strconv.Atoi(page)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
@@ -93,14 +82,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "_num": len(allDocuments), "documents": allDocuments})
 		})
 
-		// @Summary Create documents
-		// @Description Create documents in a specific database
-		// @ID create-documents
-		// @Accept json
-		// @Produce json
-		// @Param db path string true "Database name"
-		// @Success 201 {object} gin.H
-		// @Router /api/docs/{db} [post]
 		api.POST("/docs/:db", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -115,8 +96,8 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			}
 
 			for _, document := range documents {
-				if document.Id == "" || document.Data == nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Key and Data fields are required"})
+				if document.Data == nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Data field is required"})
 					return
 				}
 
@@ -133,15 +114,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusCreated, gin.H{"_resp": elapsedTime.String(), "message": "Documents created successfully"})
 		})
 
-		// @Summary Search documents by field value
-		// @Description Search documents in a specific database by a field value
-		// @ID search-documents
-		// @Produce json
-		// @Param db path string true "Database name"
-		// @Param field query string true "Field name to search"
-		// @Param value query string true "Value to search for"
-		// @Success 200 {object} gin.H
-		// @Router /api/docs/{db}/search [get]
 		api.GET("/docs/:db/search", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -149,17 +121,14 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			dbFile := filepath.Join(dataDir, dbName+".qdb")
 			db := database.LoadDB(dbFile, aesKey)
 
-			// Get the field and value from query parameters
 			field := c.Query("field")
 			value := c.Query("value")
 
-			// Check if field and value are provided
 			if field == "" || value == "" {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Field and value parameters are required"})
 				return
 			}
 
-			// Call the FetchDocumentsByFieldValue function to search documents
 			matchingDocuments, err := db.FetchDocumentsByFieldValue(field, value)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -181,14 +150,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "_num": len(allDocuments), "documents": allDocuments})
 		})
 
-		// @Summary Get document by key
-		// @Description Retrieve a document by its key from a specific database
-		// @ID get-document-by-key
-		// @Produce json
-		// @Param db path string true "Database name"
-		// @Param key path string true "Document key"
-		// @Success 200 {object} gin.H
-		// @Router /api/docs/{db}/{key} [get]
 		api.GET("/docs/:db/:key", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -211,15 +172,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "data": data})
 		})
 
-		// @Summary Update document by key
-		// @Description Update a document by its key in a specific database
-		// @ID update-document-by-key
-		// @Accept json
-		// @Produce json
-		// @Param db path string true "Database name"
-		// @Param key path string true "Document key"
-		// @Success 200 {object} gin.H
-		// @Router /api/docs/{db}/{key} [put]
 		api.PUT("/docs/:db/:key", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -246,14 +198,6 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "message": "Document updated successfully"})
 		})
 
-		// @Summary Delete document by key
-		// @Description Delete a document by its key from a specific database
-		// @ID delete-document-by-key
-		// @Produce json
-		// @Param db path string true "Database name"
-		// @Param key path string true "Document key"
-		// @Success 200 {object} gin.H
-		// @Router /api/docs/{db}/{key} [delete]
 		api.DELETE("/docs/:db/:key", func(c *gin.Context) {
 			startTime := time.Now()
 
@@ -274,16 +218,7 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "message": "Document deleted successfully"})
 		})
 
-		// @Summary Get admin information
-		// @Description Retrieve information about the last used database, last update time, last added record, and last read record
-		// @ID get-admin-info
-		// @Produce json
-		// @Success 200 {object} gin.H
-		// @Router /api/docs/updates [get]
-
-		// all stored in memory non-persistant though restarts for security. not encrypted
 		api.GET("/docs/updates", func(c *gin.Context) {
-
 			adminInfo := gin.H{
 				"last_used_db":      database.LastUsedDB,
 				"last_update_time":  database.LastUpdateTime.Format(time.RFC3339),
@@ -308,9 +243,9 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 
 			c.JSON(http.StatusOK, collections)
 		})
-	}
 
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "pong"})
-	})
+		router.GET("/ping", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "pong"})
+		})
+	}
 }
