@@ -1,5 +1,5 @@
-function fetchData(collectionName, count, page) {
-    fetch(`/api/v1/docs/${collectionName}`)
+function fetchData(collectionName, count, page = 1) {
+    fetch(`/api/v1/docs/${collectionName}?page=${page}`)
         .then(response => response.json())
         .then(data => {
             const recordsTable = document.getElementById('table-body');
@@ -8,9 +8,8 @@ function fetchData(collectionName, count, page) {
             const collectionsTitle = document.getElementById('collection_title');
             const pageCount = document.getElementById('page_count');
 
-
-
-            pageCount.innerText = count/5;
+            pageCount.innerText = Math.ceil(count / 5);
+            totalPages = Math.ceil(count / 5);
             collectionsTitle.innerText = collectionName;
             respTime.innerText = data._resp;
             recCount.innerText = count;
@@ -56,6 +55,10 @@ function fetchData(collectionName, count, page) {
                 tr.appendChild(contentTd);
                 tr.appendChild(dateAddedTd);
 
+                idTd.addEventListener('click', () => {
+                    fetchDocumentDetails(doc.id);
+                });
+
                 recordsTable.appendChild(tr);
             });
         })
@@ -63,6 +66,40 @@ function fetchData(collectionName, count, page) {
             console.error('Error fetching data:', error);
         });
 }
+
+function fetchDocumentDetails(documentId) {
+    fetch(`/api/v1/docs/mydb/${documentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const modal = document.getElementById('documentModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            // Check the structure of the data object
+            console.log(data);
+
+            // Assuming the document details are in data.documents[0].data
+            const doc = data
+            const documentDetails = `
+                <p><strong>ID:</strong> ${doc.id || 'N/A'}</p>
+                <p><strong>Content:</strong> <pre>${JSON.stringify(doc.data, null, 2) || 'N/A'}</pre></p>
+            `;
+            modalContent.innerHTML = documentDetails;
+            modal.classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error fetching document details:', error);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const closeModal = document.getElementById('closeModal');
+    closeModal.addEventListener('click', () => {
+        const modal = document.getElementById('documentModal');
+        modal.classList.add('hidden');
+    });
+});
+
+let page = 1; 
 
 fetch('/api/v1/docs/collections')
     .then(response => response.json())
@@ -96,8 +133,25 @@ fetch('/api/v1/docs/collections')
             anchor.appendChild(div2);
 
             anchor.addEventListener('click', () => {
-                fetchData(dbName, count);
+                fetchData(dbName, count, page = 1);
             });
+
+            document.getElementById('prevPage').addEventListener('click', () => {
+                if (page > 1) {
+                    page -= 1;
+                    fetchData(dbName, count, page);
+                    document.getElementById('current_page').textContent = page;
+                }
+            });
+            
+            document.getElementById('nextPage').addEventListener('click', () => {
+                if (page < totalPages) {
+                    page += 1;
+                    fetchData(dbName, count, page);
+                    document.getElementById('current_page').textContent = page;
+                }
+            });
+            
 
             collectionsElement.appendChild(anchor);
         });
@@ -105,3 +159,13 @@ fetch('/api/v1/docs/collections')
     .catch(error => {
         console.error('Error fetching data:', error);
     });
+
+// document.getElementById('closeModal').addEventListener('click', function() {
+//     document.getElementById('documentModal').classList.add('hidden');
+// });
+
+// window.onclick = function(event) {
+//     if (event.target == document.getElementById('documentModal')) {
+//         document.getElementById('documentModal').classList.add('hidden');
+//     }
+// };

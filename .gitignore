@@ -8,6 +8,15 @@
 *.so
 *.dylib
 
+# stuff
+__pycache__
+main.py
+apipywrap
+apipywrap/__pycache__
+apipywrap/errors.py
+apipywrap/utils.py
+apipywrap/fucktristan.py
+
 # Test binary, built with `go test -c`
 *.test
 
