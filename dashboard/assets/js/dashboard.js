@@ -83,20 +83,19 @@ function fetchDocumentDetails(collectionName, documentId) {
     fetch(`/api/v1/docs/${collectionName}/${documentId}`)
         .then(response => response.json())
         .then(data => {
-            const modal = document.getElementById('documentModal');
-            const modalContent = document.getElementById('modalContent');
+            const collectionContent = document.getElementById('collectionContent');
 
             const documentDetails = `
                 <p class="mb-2">ID: <span class="text-gray-500">${documentId || 'N/A'}</span></p>
                 <p class="mb-2">Fetched In: <span class="text-gray-500">${data._resp || 'N/A'}</span></p>
 
-                <textarea id="jsonTextarea" style="width: 100%; min-height: 200px;" class="bg-secondary font-mono rounded-md p-4 border-none outline-none active:border-none active:outline-none mb-4">${JSON.stringify(data.data, null, 2) || ''}</textarea>
+                <textarea id="dataTextArea" style="width: 100%; min-height: 200px;" class="bg-secondary font-mono rounded-md p-4 border-none outline-none active:border-none active:outline-none mb-4">${JSON.stringify(data.data, null, 2) || ''}</textarea>
                 
                 <button onclick="validateAndPost('${collectionName}', '${documentId}')" class="btn w-full mt-4 bg-secondary border-main px-4 py-2 rounded-md text-white hover:bg-primary hover:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50">
                     Update Document
                 </button>
             `;
-            modalContent.innerHTML = documentDetails;
+            collectionContent.innerHTML = documentDetails;
         })
         .catch(error => {
             console.error('Error fetching document details:', error);
@@ -104,18 +103,18 @@ function fetchDocumentDetails(collectionName, documentId) {
 }
 
 function validateAndPost(collectionName, documentId) {
-    const jsonTextarea = document.getElementById('jsonTextarea');
-    const jsonString = jsonTextarea.value.trim();
+    const dataTextArea = document.getElementById('dataTextArea');
+    const rawJSON = dataTextArea.value.trim();
 
     try {
-        const jsonData = JSON.parse(jsonString);
+        const parsedJSON = JSON.parse(rawJSON);
 
         fetch(`/api/v1/docs/${collectionName}/${documentId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(jsonData)
+                body: JSON.stringify(parsedJSON)
             })
             .then(response => {
                 if (!response.ok) {
