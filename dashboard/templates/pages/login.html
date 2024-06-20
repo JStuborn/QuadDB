@@ -1,0 +1,30 @@
+{{define "content"}}
+<div class="flex items-center justify-center min-h-screen p-4 mt-5">
+    <div class="flex flex-col overflow-hidden bg-main rounded-md shadow-lg">
+        <div class="p-4 py-6 text-white bg-secondary md:w-80 md:flex-shrink-0 md:flex md:flex-col md:justify-evenly">
+            <div class="my-3 text-4xl font-bold tracking-wider">
+                <a href="/">QuadDB</a>
+            </div>
+            <p class="mt-6 font-normal md:mt-0 text-gray-400 font-semibold"> This page requires a valid administrator login! </p>
+        </div>
+        <div class="p-5 bg-main md:flex-1">
+            <form action="#" class="flex flex-col space-y-5">
+                <div class="flex flex-col space-y-1 mt-2">
+                    <label class="text-sm font-semibold text-gray-500">Username</label>
+                    <input type="text" autofocus class="mt-2 px-4 py-2 transition duration-300 rounded-md focus:border-transparent focus:outline-none bg-secondary text-white" />
+                </div>
+                <div class="flex flex-col space-y-1 mt-5">
+                    <div class="flex items-center justify-between">
+                        <label for="password" class="text-sm font-semibold text-gray-500">Password</label>
+                    </div>
+                    <input type="password" id="password" class="mt-2 px-4 py-2 transition duration-300 rounded-md focus:border-transparent focus:outline-none bg-secondary text-white" />
+                </div>
+
+                <div class="mt-5">
+                    <button type="submit" class="w-full px-4 py-2 font-semibold text-gray-400 transition-colors duration-300 bg-secondary rounded-md shadow hover:bg-blue-600 focus:outline-none focus:ring-blue-200 focus:ring-4">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{end}}

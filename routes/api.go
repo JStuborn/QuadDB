@@ -118,6 +118,8 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				}
 			}
 
+			databases[dbName] = database.LoadDB(dbFile, aesKey)
+
 			endTime := time.Now()
 			elapsedTime := endTime.Sub(startTime)
 
