@@ -1,4 +1,9 @@
-function fetchData(collectionName, count, page = 1) {
+let page = 1;
+let totalPages = 0;
+
+function fetchData(collectionName, count, currentPage = 1) {
+    page = currentPage;
+
     fetch(`/api/v1/docs/${collectionName}?page=${page}`)
         .then(response => response.json())
         .then(data => {
@@ -8,6 +13,7 @@ function fetchData(collectionName, count, page = 1) {
             const collectionsTitle = document.getElementById('collection_title');
             const pageCount = document.getElementById('page_count');
 
+            // Update UI elements
             pageCount.innerText = Math.ceil(count / 5);
             totalPages = Math.ceil(count / 5);
             collectionsTitle.innerText = collectionName;
@@ -16,9 +22,11 @@ function fetchData(collectionName, count, page = 1) {
             recordsTable.innerHTML = '';
 
             data.documents.forEach(doc => {
+                // Create table row for each document
                 const tr = document.createElement('tr');
                 tr.id = `record-${doc.id}`;
 
+                // Create and configure table cells
                 const fileTypeTd = document.createElement('td');
                 fileTypeTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
                 fileTypeTd.innerHTML = `
@@ -40,6 +48,7 @@ function fetchData(collectionName, count, page = 1) {
                 const contentTd = document.createElement('td');
                 contentTd.className = 'hidden px-1 py-2 border-b sm:p-3 border-main md:table-cell';
 
+                // Check if doc has length greater than 5 for content display
                 if (doc.length > 5) {
                     contentTd.innerHTML = `<code>${JSON.stringify(doc)}</code>`;
                 } else {
@@ -50,15 +59,18 @@ function fetchData(collectionName, count, page = 1) {
                 dateAddedTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
                 dateAddedTd.textContent = new Date().toLocaleString();
 
+                // Append table cells to table row
                 tr.appendChild(fileTypeTd);
                 tr.appendChild(idTd);
                 tr.appendChild(contentTd);
                 tr.appendChild(dateAddedTd);
 
+                // Add event listener to idTd for fetching document details
                 idTd.addEventListener('click', () => {
                     fetchDocumentDetails(collectionName, doc.id);
                 });
 
+                // Append table row to records table
                 recordsTable.appendChild(tr);
             });
         })
@@ -73,28 +85,67 @@ function fetchDocumentDetails(collectionName, documentId) {
         .then(data => {
             const modal = document.getElementById('documentModal');
             const modalContent = document.getElementById('modalContent');
-            
+
             const documentDetails = `
                 <p class="mb-2"><strong>ID:</strong> ${documentId || 'N/A'}</p>
-                <pre>${JSON.stringify(data.data, null, 2) || 'N/A'}</pre></p>
+
+                <textarea id="jsonTextarea" style="width: 100%; min-height: 200px;" class="bg-main border-none outline-none active:border-none active:outline-none mb-4">${JSON.stringify(data.data, null, 2) || ''}</textarea>
+                
+                <button onclick="validateAndPost('${collectionName}', '${documentId}')" class="btn w-full mt-4 bg-secondary border-main px-4 py-2 rounded-md text-white hover:bg-primary hover:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50">
+                    Update Document
+                </button>
             `;
             modalContent.innerHTML = documentDetails;
-            modal.classList.remove('hidden');
         })
         .catch(error => {
             console.error('Error fetching document details:', error);
         });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const closeModal = document.getElementById('closeModal');
-    closeModal.addEventListener('click', () => {
-        const modal = document.getElementById('documentModal');
-        modal.classList.add('hidden');
-    });
-});
+function validateAndPost(collectionName, documentId) {
+    const jsonTextarea = document.getElementById('jsonTextarea');
+    const jsonString = jsonTextarea.value.trim();
 
-let page = 1; 
+    try {
+        const jsonData = JSON.parse(jsonString);
+
+        fetch(`/api/v1/docs/${collectionName}/${documentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                new Notify({
+                    title: 'Collection Update',
+                    text: 'Data has been updated!',
+                    backgroundColor: 'var(--accent-primary)',
+                    position: 'right bottom',
+                    autoclose: true,
+                    autotimeout: 3000
+                });
+            })
+            .catch(error => {
+                console.error('Error sending POST request:', error);
+            });
+    } catch (error) {
+        new Notify({
+            title: 'Collection Update Error',
+            text: 'Invalid JSON Syntax!',
+            backgroundColor: 'var(--accent-error)',
+            position: 'right bottom',
+            autoclose: true,
+            autotimeout: 3000
+        });
+    }
+}
 
 fetch('/api/v1/docs/collections')
     .then(response => response.json())
@@ -131,30 +182,12 @@ fetch('/api/v1/docs/collections')
                 fetchData(dbName, count, page = 1);
             });
 
-            document.getElementById('prevPage').addEventListener('click', () => {
-                if (page > 1) {
-                    page -= 1;
-                    fetchData(dbName, count, page);
-                    document.getElementById('current_page').textContent = page;
-                }
-            });
-            
-            document.getElementById('nextPage').addEventListener('click', () => {
-                if (page < totalPages) {
-                    page += 1;
-                    fetchData(dbName, count, page);
-                    document.getElementById('current_page').textContent = page;
-                }
-            });
-            
-
             collectionsElement.appendChild(anchor);
         });
     })
     .catch(error => {
         console.error('Error fetching data:', error);
     });
-
 
 document.addEventListener("DOMContentLoaded", () => {
     const wrapper = document.querySelector(".wrapper");
@@ -167,12 +200,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// document.getElementById('closeModal').addEventListener('click', function() {
-//     document.getElementById('documentModal').classList.add('hidden');
-// });
+// Update event listeners for pagination buttons
+document.getElementById('prevPage').addEventListener('click', () => {
+    if (page > 1) {
+        page -= 1;
+        const collectionName = document.getElementById('collection_title').innerText;
+        const count = parseInt(document.getElementById('record_count').innerText);
+        fetchData(collectionName, count, page);
+        document.getElementById('current_page').textContent = page;
+    }
+});
 
-// window.onclick = function(event) {
-//     if (event.target == document.getElementById('documentModal')) {
-//         document.getElementById('documentModal').classList.add('hidden');
-//     }
-// };
+document.getElementById('nextPage').addEventListener('click', () => {
+    if (page < totalPages) {
+        page += 1;
+        const collectionName = document.getElementById('collection_title').innerText;
+        const count = parseInt(document.getElementById('record_count').innerText);
+        fetchData(collectionName, count, page);
+        document.getElementById('current_page').textContent = page;
+    }
+});
