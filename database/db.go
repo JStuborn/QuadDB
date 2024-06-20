@@ -92,6 +92,11 @@ func (db *Database) LoadDocumentsPaginated(offset, limit int) (map[string]json.R
 
 	sort.Strings(keys)
 
+	if offset >= len(keys) {
+		// If the offset is beyond the number of keys, return an empty result else panic err
+		return paginatedDocuments, nil
+	}
+
 	end := offset + limit
 	if end > len(keys) {
 		end = len(keys)
