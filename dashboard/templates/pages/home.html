@@ -127,18 +127,16 @@
     </div>
 </div>
 
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<!-- Side Panel Structure -->
 <div class="wrapper">
-    <div class="main">
-        <!-- Main content can be placed here -->
-    </div>
-    <button class="side-panel-toggle" type="button">
+    <div class="main"></div>
+
+    <button id="side-panel-toggle" class="side-panel-toggle bg-secondary border-none outline-none active:border-none active:outline-none">
         <span class="material-icons sp-icon-open">keyboard_double_arrow_left</span>
         <span class="material-icons sp-icon-close">keyboard_double_arrow_right</span>
     </button>
-    <div class="side-panel">
-        <div class="modal-content bg-white p-5 rounded-lg shadow-lg w-full max-w-lg mx-auto overflow-auto"
+
+    <div class="side-panel bg-secondary">
+        <div class="modal-content text-sm p-5 bg-main rounded-md w-full max-w-lg mx-auto overflow-auto"
             style="max-height: 90%;">
             <div class="modal-header flex justify-between items-center">
                 <h2 class="text-xl font-bold" id="modalTitle">Document Details</h2>
@@ -150,120 +148,10 @@
                     </svg>
                 </button>
             </div>
-            <div id="modalContent" class="mt-4 overflow-auto" style="max-height: calc(100vh - 150px);">
-                <!-- Document details will be inserted here -->
-            </div>
+
+            <div id="modalContent" class="mt-4 overflow-auto" style="max-height: calc(100vh - 150px);"></div>
         </div>
     </div>
 </div>
 
-<style>
-    body {
-        margin: 0;
-        font-family: sans-serif;
-        line-height: 1.5;
-    }
-
-    .wrapper {
-        display: flex;
-        height: 100vh;
-        transition: all 0.5s ease;
-        
-    }
-
-    .main {
-        flex-grow: 1;
-        padding: 20px;
-        overflow-y: auto;
-    }
-
-    .side-panel-toggle {
-        width: 40px;
-        height: 40px;
-        flex-shrink: 0;
-        display: grid;
-        place-items: center;
-        color: #ffffff;
-        background: var(--bg-lighter);
-        border: 1px solid var(--border-primary);
-        border: none;
-        border-radius: 5px 0 0 5px;
-        outline: none;
-        cursor: pointer;
-        transition: background 0.3s ease;
-    }
-
-    .side-panel-toggle:hover {
-        background: var(--accent-secondary);
-    }
-
-    .sp-icon-close {
-        display: none !important;
-    }
-
-    .side-panel {
-        display: none;
-        width: 350px;
-        flex-shrink: 0;
-        padding: 20px;
-        color: #ffffff;
-        background: var(--bg-lighter);
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
-        transition: transform 0.5s ease, opacity 0.5s ease;
-        transform: translateX(350px);
-        opacity: 0;
-        overflow-y: auto;
-        border: 1px solid var(--border-primary);
-        resize: horizontal;
-        min-width: 250px;
-        max-width: 600px;
-
-    }
-
-    .side-panel-open .side-panel {
-        display: block;
-
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    .side-panel-open .sp-icon-open {
-        display: none !important;
-    }
-
-    .side-panel-open .sp-icon-close {
-        display: initial !important;
-    }
-
-    @media (max-width: 768px) {
-        .side-panel {
-            width: 100%;
-            position: fixed;
-            top: 0;
-            right: 0;
-            height: 100%;
-            z-index: 1000;
-            resize: none;
-        }
-    }
-
-    .modal-content {
-        max-height: calc(100vh - 150px);
-        overflow-y: auto;
-        border: 1px solid var(--border-primary);
-    }
-</style>
-
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const wrapper = document.querySelector(".wrapper");
-        const toggleButton = document.querySelector(".side-panel-toggle");
-
-        wrapper.classList.remove("side-panel-open");
-
-        toggleButton.addEventListener("click", () => {
-            wrapper.classList.toggle("side-panel-open");
-        });
-    });
-</script>
 {{end}}

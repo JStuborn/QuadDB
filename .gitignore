@@ -8,14 +8,14 @@
 *.so
 *.dylib
 
+# QDB Data and Bin
+*.qdb
+QuadDB.*
+QuadDB
+config/config.yaml
+
 # stuff
 __pycache__
-main.py
-apipywrap
-apipywrap/__pycache__
-apipywrap/errors.py
-apipywrap/utils.py
-apipywrap/fucktristan.py
 
 # Test binary, built with `go test -c`
 *.test
@@ -28,9 +28,3 @@ apipywrap/fucktristan.py
 
 # Go workspace file
 go.work
-
-# Quad Files
-*.qdb
-config/config.yaml
-temp/*
-QuadDB

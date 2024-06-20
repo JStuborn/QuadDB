@@ -56,7 +56,7 @@ function fetchData(collectionName, count, page = 1) {
                 tr.appendChild(dateAddedTd);
 
                 idTd.addEventListener('click', () => {
-                    fetchDocumentDetails(doc.id);
+                    fetchDocumentDetails(collectionName, doc.id);
                 });
 
                 recordsTable.appendChild(tr);
@@ -67,21 +67,16 @@ function fetchData(collectionName, count, page = 1) {
         });
 }
 
-function fetchDocumentDetails(documentId) {
-    fetch(`/api/v1/docs/mydb/${documentId}`)
+function fetchDocumentDetails(collectionName, documentId) {
+    fetch(`/api/v1/docs/${collectionName}/${documentId}`)
         .then(response => response.json())
         .then(data => {
             const modal = document.getElementById('documentModal');
             const modalContent = document.getElementById('modalContent');
             
-            // Check the structure of the data object
-            console.log(data);
-
-            // Assuming the document details are in data.documents[0].data
-            const doc = data
             const documentDetails = `
-                <p><strong>ID:</strong> ${doc.id || 'N/A'}</p>
-                <p><strong>Content:</strong> <pre>${JSON.stringify(doc.data, null, 2) || 'N/A'}</pre></p>
+                <p class="mb-2"><strong>ID:</strong> ${documentId || 'N/A'}</p>
+                <pre>${JSON.stringify(data.data, null, 2) || 'N/A'}</pre></p>
             `;
             modalContent.innerHTML = documentDetails;
             modal.classList.remove('hidden');
@@ -159,6 +154,18 @@ fetch('/api/v1/docs/collections')
     .catch(error => {
         console.error('Error fetching data:', error);
     });
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const wrapper = document.querySelector(".wrapper");
+    const toggleButton = document.getElementById("side-panel-toggle");
+
+    wrapper.classList.remove("side-panel-open");
+
+    toggleButton.addEventListener("click", () => {
+        wrapper.classList.toggle("side-panel-open");
+    });
+});
 
 // document.getElementById('closeModal').addEventListener('click', function() {
 //     document.getElementById('documentModal').classList.add('hidden');
