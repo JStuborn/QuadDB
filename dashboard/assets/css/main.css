@@ -209,6 +209,11 @@ body {
     border-color: var(--accent-secondary);
 }
 
+#table-body > tr:hover {
+    background: var(--bg-lighterer);
+    border-radius: 0.375rem;
+}
+
 .context-menu {
     color: rgb(192, 192, 192);
     padding: 0.5vh;
