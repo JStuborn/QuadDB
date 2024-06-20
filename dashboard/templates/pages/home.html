@@ -1,106 +1,269 @@
 <!-- pages/home.html -->
 
 {{define "content"}}
-    <div class="flex overflow-hidden flex-col flex-grow h-full">
-        <div class="hidden px-10 w-full h-16 border-b lg:flex border-main">
-            <div class="flex h-full text-gray-400">
-                <a href="#" class="inline-flex items-center mr-8 h-full text-white border-b-2 cursor-pointer border-primary text-primary">Collections</a>
-                <a href="#" class="inline-flex items-center mr-8 h-full border-b-2 border-transparent cursor-pointer">Users</a>
-                <a href="#" class="inline-flex items-center h-full border-b-2 border-transparent cursor-pointer">Settings</a>
-            </div>
-            <div class="flex items-center ml-auto space-x-7">
-                <button class="flex items-center">
-                    <span>QDB Admin</span>
-                    <svg viewBox="0 0 24 24" class="flex-shrink-0 ml-1 w-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-            </div>
+<div class="flex overflow-hidden flex-col flex-grow h-full">
+    <div class="hidden px-10 w-full h-16 border-b lg:flex border-main">
+        <div class="flex h-full text-gray-400">
+            <a href="#"
+                class="inline-flex items-center mr-8 h-full text-white border-b-2 cursor-pointer border-primary text-primary">Collections</a>
+            <a href="#"
+                class="inline-flex items-center mr-8 h-full border-b-2 border-transparent cursor-pointer">Users</a>
+            <a href="#"
+                class="inline-flex items-center h-full border-b-2 border-transparent cursor-pointer">Settings</a>
         </div>
+        <div class="flex items-center ml-auto space-x-7">
+            <button class="flex items-center">
+                <span>QDB Admin</span>
+                <svg viewBox="0 0 24 24" class="flex-shrink-0 ml-1 w-4" stroke="currentColor" stroke-width="2"
+                    fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
 
-        <div class="flex overflow-x-hidden flex-grow">
-            <div class="hidden overflow-y-auto flex-shrink-0 p-5 w-48 h-full border-r xl:w-72 border-main lg:block">
-                <div class="text-xs tracking-wider text-gray-400">COLLECTIONS</div>
-                <div class="relative mt-2">
-                    <input type="text" class="pl-8 w-full h-9 text-sm text-white rounded-md border-none outline-none bg-secondary active:outline-none active:border-none" placeholder="Search" />
-                    <svg viewBox="0 0 24 24" class="absolute left-2 top-1/2 w-4 text-gray-400 transform translate-x-0.5 -translate-y-1/2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                </div>
-                <div class="mt-3 space-y-4" id="collections"> </div>
+    <div class="flex overflow-x-hidden flex-grow">
+        <div class="hidden overflow-y-auto flex-shrink-0 p-5 w-48 h-full border-r xl:w-72 border-main lg:block">
+            <div class="text-xs tracking-wider text-gray-400">COLLECTIONS</div>
+            <div class="relative mt-2">
+                <input type="text"
+                    class="pl-8 w-full h-9 text-sm text-white rounded-md border-none outline-none bg-secondary active:outline-none active:border-none"
+                    placeholder="Search" />
+                <svg viewBox="0 0 24 24"
+                    class="absolute left-2 top-1/2 w-4 text-gray-400 transform translate-x-0.5 -translate-y-1/2"
+                    stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
             </div>
-            <div class="overflow-y-auto flex-grow bg-gray-900 bg-main" id="placeholder">
-                <div class="flex sticky top-0 flex-col px-4 pt-4 w-full text-white bg-gray-900 border-b sm:px-7 sm:pt-7 border-main">
-                    <div class="flex items-center w-full">
-                        <div class="flex items-center text-3xl text-white"> 
-                            <span id="collection_title">Select a collection to view its records.</span>
-                            <span class="ml-2 text-sm">(Fetched collection in <span id="collection_fetch_time">0ms</span>)</span>
-                        </div>
-                        <div class="hidden justify-end items-center ml-auto sm:flex">
-                            <div class="text-right">
-                                <div class="text-xs text-gray-400">Record Count:</div>
-                                <div class="text-lg text-white" id="record_count">0</div>
-                            </div>
-                            <button class="flex justify-center items-center ml-4 w-8 h-8 text-gray-400 rounded-full border border-gray-700 shadow">
-                                <svg viewBox="0 0 24 24" class="w-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="1"></circle>
-                                    <circle cx="19" cy="12" r="1"></circle>
-                                    <circle cx="5" cy="12" r="1"></circle>
-                                </svg>
-                            </button>
-                        </div>
+            <div class="mt-3 space-y-4" id="collections"> </div>
+        </div>
+        <div class="overflow-y-auto flex-grow bg-gray-900 bg-main" id="placeholder">
+            <div
+                class="flex sticky top-0 flex-col px-4 pt-4 w-full text-white bg-gray-900 border-b sm:px-7 sm:pt-7 border-main">
+                <div class="flex items-center w-full">
+                    <div class="flex items-center text-3xl text-white">
+                        <span id="collection_title">Select a collection to view its records.</span>
+                        <span class="ml-2 text-sm">(Fetched collection in <span
+                                id="collection_fetch_time">0ms</span>)</span>
                     </div>
-                    <div class="flex items-center mt-4 space-x-3 sm:mt-7">
-                        <a href="#" class="px-3 pb-1.5 text-white border-b-2 border-primary text-primary">Records</a>
-                        <a href="#" class="px-3 pb-1.5 text-gray-400 border-b-2 border-transparent">Upload</a>
-                        <a href="#" class="px-3 pb-1.5 text-gray-400 border-b-2 border-transparent">Settings</a>
-                    </div>
-                </div>
-                <div class="p-4 sm:p-7">
-                    <div class="flex items-center mb-7 w-full">
-                        <button class="inline-flex items-center py-0 pr-2 pl-2.5 mr-3 h-8 leading-none text-gray-400 text-gray-700 rounded-md border shadow border-main">
-                            <svg viewBox="0 0 24 24" class="mr-2 w-4 text-gray-400" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="16" y1="2" x2="16" y2="6"></line>
-                                <line x1="8" y1="2" x2="8" y2="6"></line>
-                                <line x1="3" y1="10" x2="21" y2="10"></line>
-                            </svg> Last 30 days <svg viewBox="0 0 24 24" class="ml-1.5 w-4 text-gray-400" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
+                    <div class="hidden justify-end items-center ml-auto sm:flex">
+                        <div class="text-right">
+                            <div class="text-xs text-gray-400">Record Count:</div>
+                            <div class="text-lg text-white" id="record_count">0</div>
+                        </div>
+                        <button
+                            class="flex justify-center items-center ml-4 w-8 h-8 text-gray-400 rounded-full border border-gray-700 shadow">
+                            <svg viewBox="0 0 24 24" class="w-4" stroke="currentColor" stroke-width="2" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="19" cy="12" r="1"></circle>
+                                <circle cx="5" cy="12" r="1"></circle>
                             </svg>
                         </button>
-                        <button class="inline-flex items-center py-0 pr-2 pl-2.5 h-8 leading-none text-gray-400 text-gray-700 rounded-md border shadow border-main"> Filter by <svg viewBox="0 0 24 24" class="ml-1.5 w-4 text-gray-400" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
+                    </div>
+                </div>
+                <div class="flex items-center mt-4 space-x-3 sm:mt-7">
+                    <a href="#" class="px-3 pb-1.5 text-white border-b-2 border-primary text-primary">Records</a>
+                    <a href="#" class="px-3 pb-1.5 text-gray-400 border-b-2 border-transparent">Upload</a>
+                    <a href="#" class="px-3 pb-1.5 text-gray-400 border-b-2 border-transparent">Settings</a>
+                </div>
+            </div>
+            <div class="p-4 sm:p-7">
+                <div class="flex items-center mb-7 w-full">
+                    <button
+                        class="inline-flex items-center py-0 pr-2 pl-2.5 mr-3 h-8 leading-none text-gray-400 text-gray-700 rounded-md border shadow border-main">
+                        <svg viewBox="0 0 24 24" class="mr-2 w-4 text-gray-400" stroke="currentColor" stroke-width="2"
+                            fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg> Last 30 days <svg viewBox="0 0 24 24" class="ml-1.5 w-4 text-gray-400"
+                            stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <button
+                        class="inline-flex items-center py-0 pr-2 pl-2.5 h-8 leading-none text-gray-400 text-gray-700 rounded-md border shadow border-main">
+                        Filter by <svg viewBox="0 0 24 24" class="ml-1.5 w-4 text-gray-400" stroke="currentColor"
+                            stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="hidden items-center ml-auto text-xs text-gray-500 sm:inline-flex">
+                        <span class="mr-3">Page <span id="current_page">1</span> of <span id="page_count"></span></span>
+                        <button id="prevPage"
+                            class="inline-flex justify-center items-center py-0 mr-2 w-8 h-8 leading-none text-gray-400 rounded-md border shadow border-main">
+                            <svg class="w-4" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
-                        <div class="hidden items-center ml-auto text-xs text-gray-500 sm:inline-flex">
-                            <span class="mr-3">Page 1 of <span id="page_count"></span></span>
-                            <button class="inline-flex justify-center items-center py-0 mr-2 w-8 h-8 leading-none text-gray-400 rounded-md border shadow border-main">
-                                <svg class="w-4" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="15 18 9 12 15 6"></polyline>
-                                </svg>
-                            </button>
-                            <button class="inline-flex justify-center items-center py-0 w-8 h-8 leading-none text-gray-400 rounded-md border shadow border-main">
-                                <svg class="w-4" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </button>
-                        </div>
+                        <button id="nextPage"
+                            class="inline-flex justify-center items-center py-0 w-8 h-8 leading-none text-gray-400 rounded-md border shadow border-main">
+                            <svg class="w-4" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
                     </div>
-                    <table class="w-full text-left" id="records">
-                        <thead>
-                            <tr class="text-gray-400">
-                                <th class="px-3 pt-0 pb-3 font-normal border-b border-main">Type</th>
-                                <th class="px-3 pt-0 pb-3 font-normal border-b border-main">ID</th>
-                                <th class="px-3 pt-0 pb-3 font-normal border-b border-main">Content</th>
-                                <th class="px-3 pt-0 pb-3 font-normal text-white border-b border-main sm:text-gray-400">Date Added</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-gray-100" id="table-body"></tbody>
-                    </table>
                 </div>
+                <table class="w-full text-left" id="records">
+                    <thead>
+                        <tr class="text-gray-400">
+                            <th class="px-3 pt-0 pb-3 font-normal border-b border-main">Type</th>
+                            <th class="px-3 pt-0 pb-3 font-normal border-b border-main">ID</th>
+                            <th class="px-3 pt-0 pb-3 font-normal border-b border-main">Content</th>
+                            <th class="px-3 pt-0 pb-3 font-normal text-white border-b border-main sm:text-gray-400">Date
+                                Added</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-100" id="table-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
-{{end}}
+</div>
 
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<!-- Side Panel Structure -->
+<div class="wrapper">
+    <div class="main">
+        <!-- Main content can be placed here -->
+    </div>
+    <button class="side-panel-toggle" type="button">
+        <span class="material-icons sp-icon-open">keyboard_double_arrow_left</span>
+        <span class="material-icons sp-icon-close">keyboard_double_arrow_right</span>
+    </button>
+    <div class="side-panel">
+        <div class="modal-content bg-white p-5 rounded-lg shadow-lg w-full max-w-lg mx-auto overflow-auto"
+            style="max-height: 90%;">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold" id="modalTitle">Document Details</h2>
+                <button class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="w-6 h-6">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="modalContent" class="mt-4 overflow-auto" style="max-height: calc(100vh - 150px);">
+                <!-- Document details will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        margin: 0;
+        font-family: sans-serif;
+        line-height: 1.5;
+    }
+
+    .wrapper {
+        display: flex;
+        height: 100vh;
+        transition: all 0.5s ease;
+        
+    }
+
+    .main {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .side-panel-toggle {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+        background: var(--bg-lighter);
+        border: 1px solid var(--border-primary);
+        border: none;
+        border-radius: 5px 0 0 5px;
+        outline: none;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .side-panel-toggle:hover {
+        background: var(--accent-secondary);
+    }
+
+    .sp-icon-close {
+        display: none !important;
+    }
+
+    .side-panel {
+        display: none;
+        width: 350px;
+        flex-shrink: 0;
+        padding: 20px;
+        color: #ffffff;
+        background: var(--bg-lighter);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+        transition: transform 0.5s ease, opacity 0.5s ease;
+        transform: translateX(350px);
+        opacity: 0;
+        overflow-y: auto;
+        border: 1px solid var(--border-primary);
+        resize: horizontal;
+        min-width: 250px;
+        max-width: 600px;
+
+    }
+
+    .side-panel-open .side-panel {
+        display: block;
+
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .side-panel-open .sp-icon-open {
+        display: none !important;
+    }
+
+    .side-panel-open .sp-icon-close {
+        display: initial !important;
+    }
+
+    @media (max-width: 768px) {
+        .side-panel {
+            width: 100%;
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100%;
+            z-index: 1000;
+            resize: none;
+        }
+    }
+
+    .modal-content {
+        max-height: calc(100vh - 150px);
+        overflow-y: auto;
+        border: 1px solid var(--border-primary);
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const wrapper = document.querySelector(".wrapper");
+        const toggleButton = document.querySelector(".side-panel-toggle");
+
+        wrapper.classList.remove("side-panel-open");
+
+        toggleButton.addEventListener("click", () => {
+            wrapper.classList.toggle("side-panel-open");
+        });
+    });
+</script>
+{{end}}
