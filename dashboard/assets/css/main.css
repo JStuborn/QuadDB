@@ -283,6 +283,7 @@ select {
 button,
 [type="button"] {
     -webkit-appearance: button;
+    appearance: button;
 }
 legend {
     padding: 0;
@@ -409,7 +410,6 @@ iframe,
 embed,
 object {
     display: block;
-    vertical-align: middle;
 }
 img,
 video {
