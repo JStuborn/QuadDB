@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,28 +24,58 @@ type Document struct {
 }
 
 type Database struct {
-	filename string
-	aesKey   []byte
+	filename   string
+	aesKey     []byte
+	fieldIndex map[string]map[string][]string
+	indexLock  sync.RWMutex
 }
 
 // LoadDB initializes a new Database instance
 func LoadDB(filename string, aesKey []byte) *Database {
-	return &Database{
-		filename: filename,
-		aesKey:   aesKey,
+	db := &Database{
+		filename:   filename,
+		aesKey:     aesKey,
+		fieldIndex: make(map[string]map[string][]string),
 	}
+
+	// Load existing documents and build indexes
+	db.buildIndex()
+
+	return db
 }
 
-// validatePath ensures the provided userPath is within the basePath directory
-func validatePath(basePath, userPath string) (string, error) {
-	cleanedPath := filepath.Clean(userPath)
-	fullPath := filepath.Join(basePath, cleanedPath)
-
-	if !strings.HasPrefix(fullPath, filepath.Clean(basePath)+string(os.PathSeparator)) {
-		return "", fmt.Errorf("invalid path")
+// buildIndex builds the index for all documents based on their fields
+func (db *Database) buildIndex() error {
+	documents, err := db.LoadDocuments()
+	if err != nil {
+		return err
 	}
 
-	return fullPath, nil
+	db.indexLock.Lock()
+	defer db.indexLock.Unlock()
+
+	for key, rawMessage := range documents {
+		var docMap map[string]interface{}
+		err := json.Unmarshal(rawMessage, &docMap)
+		if err != nil {
+			return err
+		}
+
+		for fieldPath := range docMap {
+			fieldValue, found := traverseNestedFields(strings.Split(fieldPath, "."), docMap)
+			if found {
+				lowerFieldPath := strings.ToLower(fieldPath)
+				lowerFieldValue := strings.ToLower(fieldValue)
+
+				if db.fieldIndex[lowerFieldPath] == nil {
+					db.fieldIndex[lowerFieldPath] = make(map[string][]string)
+				}
+				db.fieldIndex[lowerFieldPath][lowerFieldValue] = append(db.fieldIndex[lowerFieldPath][lowerFieldValue], key)
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadDocuments reads and decrypts the database file, returning the documents as a map
@@ -157,6 +187,24 @@ func (db *Database) CreateDocument(key string, data json.RawMessage) error {
 		return err
 	}
 
+	// Update the index
+	db.indexLock.Lock()
+	defer db.indexLock.Unlock()
+	var docMap map[string]interface{}
+	err = json.Unmarshal(data, &docMap)
+	if err != nil {
+		return err
+	}
+	for fieldPath := range docMap {
+		fieldValue, found := traverseNestedFields(strings.Split(fieldPath, "."), docMap)
+		if found {
+			if db.fieldIndex[fieldPath] == nil {
+				db.fieldIndex[fieldPath] = make(map[string][]string)
+			}
+			db.fieldIndex[fieldPath][fieldValue] = append(db.fieldIndex[fieldPath][fieldValue], key)
+		}
+	}
+
 	return nil
 }
 
@@ -197,6 +245,9 @@ func (db *Database) UpdateDocument(key string, data json.RawMessage) error {
 		return err
 	}
 
+	// Update the index
+	db.buildIndex()
+
 	return nil
 }
 
@@ -217,6 +268,9 @@ func (db *Database) DeleteDocument(key string) error {
 	if err != nil {
 		return err
 	}
+
+	// Update the index
+	db.buildIndex()
 
 	return nil
 }
@@ -283,45 +337,63 @@ func (db *Database) unpadData(data []byte) []byte {
 	return data[:(length - unpadding)]
 }
 
-// FetchDocumentsByFieldValue returns documents matching a specified field value
-func (db *Database) FetchDocumentsByFieldValue(fieldPath string, value string) (map[string]json.RawMessage, error) {
+// WHAT THE FUCK IS A KOLOMITORRR 🦅🦅
+// FetchDocumentsByFieldValues returns documents matching specified field-value pairs
+func (db *Database) FetchDocumentsByFieldValues(fieldValues map[string]string) (map[string]json.RawMessage, error) {
+	db.indexLock.RLock()
+	defer db.indexLock.RUnlock()
+
+	matchingKeys := make(map[string]int) // Map to count matching fields
+
+	for fieldPath, value := range fieldValues {
+		lowerFieldPath := strings.ToLower(fieldPath)
+		lowerValue := strings.ToLower(value)
+
+		keys, exists := db.fieldIndex[lowerFieldPath][lowerValue]
+		if !exists {
+			// If any field does not match, no need to proceed further
+			return nil, nil
+		}
+
+		for _, key := range keys {
+			matchingKeys[key]++
+		}
+	}
+
+	// Filter out keys that matched all field-value pairs
+	expectedMatches := len(fieldValues)
 	documents, err := db.LoadDocuments()
 	if err != nil {
 		return nil, err
 	}
 
 	matchingDocuments := make(map[string]json.RawMessage)
-
-	for key, rawMessage := range documents {
-		var docMap map[string]interface{}
-		err := json.Unmarshal(rawMessage, &docMap)
-		if err != nil {
-			return nil, err
-		}
-
-		fieldValue, found := traverseNestedFields(strings.Split(fieldPath, "."), docMap)
-		if found && fieldValue == value {
-			matchingDocuments[key] = rawMessage
+	for key, matchCount := range matchingKeys {
+		if matchCount == expectedMatches {
+			if data, exists := documents[key]; exists {
+				matchingDocuments[key] = data
+			}
 		}
 	}
 
 	return matchingDocuments, nil
 }
 
-// traverseNestedFields retrieves a nested field value from a document map
+// traverseNestedFields retrieves a nested field value from a document map (returns string and is case-insensitive)
 func traverseNestedFields(fields []string, docMap map[string]interface{}) (string, bool) {
-	var fieldValue interface{} = docMap
-	var found bool
+	fieldValue := interface{}(docMap)
 
 	for _, field := range fields {
-		if nestedMap, ok := fieldValue.(map[string]interface{}); ok {
-			fieldValue, found = nestedMap[field]
+		switch v := fieldValue.(type) {
+		case map[string]interface{}:
+			var found bool
+			fieldValue, found = v[field]
 			if !found {
 				return "", false
 			}
-		} else if nestedSlice, ok := fieldValue.([]interface{}); ok {
+		case []interface{}:
 			var sliceValues []string
-			for _, elem := range nestedSlice {
+			for _, elem := range v {
 				if elemMap, ok := elem.(map[string]interface{}); ok {
 					if val, ok := elemMap[field]; ok {
 						sliceValues = append(sliceValues, fmt.Sprintf("%v", val))
@@ -332,7 +404,7 @@ func traverseNestedFields(fields []string, docMap map[string]interface{}) (strin
 				return strings.Join(sliceValues, ","), true
 			}
 			return "", false
-		} else {
+		default:
 			return "", false
 		}
 	}

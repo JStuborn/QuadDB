@@ -4,33 +4,32 @@
     box-sizing: border-box;
 }
 
+* {
+    font-family: monospace;
+}
+
 :root {
-    --accent-primary: #5b63d3;
-    --accent-secondary: #4f56c2;
+    --accent-primary: #cba6f7;
+    --accent-secondary: #cba6f7;
 
-    --accent-border: #4f57c286;
+    --accent-border: #cba6f7c5;
+    --selection-bg: #cba6f7c5;
 
-    --selection-bg: #5b63d371;
-    --selection-color: #5b63d3;
+    --bg-primary: #11111b;
+    --bg-lighter: #181825;
+    --bg-lighterer: #1e1e2e;
 
-    --accent-orange: hsl(calc(20deg + deg) 100% 61%);
-    --accent-blue: hsl(calc(203deg + deg) 100% 65%);
-
-    --bg-primary: #0b0c14;
-    --bg-lighter: #0b0c14;
-    --bg-lighterer: #161721;
-
-    --primary-text: #fff;
-    --primary-light: #d6d6d6;
-
-    --accent-error: rgb(194, 96, 79);
-    --border-primary: #282b3b;
+    --primary-text: #cdd6f4;
+    --primary-light: #bac2de;
+    --secondary-text: #a6adc8;
+    
+    --accent-error: #f38ba8;
+    --border-primary: #313244;
 
     -moz-tab-size: 4;
     -o-tab-size: 4;
     tab-size: 4;
 }
-
 
 /* Hide the default scrollbar for Firefox */
 * {
@@ -164,13 +163,13 @@ body {
 /* Standard selection */
 ::selection {
     background-color: var(--selection-bg);
-    color: var(--selection-color) !important;
+    color: var(--accent-primary) !important;
 }
 
 /* Firefox specific selection */
 ::-moz-selection {
     background-color: var(--selection-bg);
-    color: var(--selection-color) !important;
+    color: var(--accent-primary) !important;
 }
 
 
@@ -182,8 +181,16 @@ body {
     color: var(--accent-primary) !important;
 }
 
+.text-secondary {
+    color: var(--secondary-text) !important;
+}
+
 .bg-secondary {
     background-color: var(--bg-lighterer);
+}
+
+.bg-light {
+    background-color: var(--bg-lighter);
 }
 
 .border-primary {

@@ -13,29 +13,27 @@ function fetchData(collectionName, count, currentPage = 1) {
             const collectionsTitle = document.getElementById('collection_title');
             const pageCount = document.getElementById('page_count');
 
-            // Update UI elements
-            pageCount.innerText = Math.ceil(count / 5);
             totalPages = Math.ceil(count / 5);
+
+            pageCount.innerText = Math.ceil(count / 5);
             collectionsTitle.innerText = collectionName;
             respTime.innerText = data._resp;
             recCount.innerText = count;
             recordsTable.innerHTML = '';
 
             data.documents.forEach(doc => {
-                // Create table row for each document
                 const tr = document.createElement('tr');
                 tr.id = `record-${doc.id}`;
 
-                // Create and configure table cells
                 const fileTypeTd = document.createElement('td');
                 fileTypeTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
                 fileTypeTd.innerHTML = `
-                    <div class="flex items-center">
-                        <svg class="p-1.5 mr-2.5 w-7 h-7 rounded-lg border border-main bg-sec" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-json-2">
-                            <path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4" />
-                            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                            <path d="M4 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1" />
-                            <path d="M8 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1" />
+                    <div class='flex items-center'>
+                        <svg class='p-1.5 mr-2.5 w-7 h-7 rounded-lg border border-main bg-sec' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-file-json-2'>
+                            <path d='M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4' />
+                            <path d='M14 2v4a2 2 0 0 0 2 2h4' />
+                            <path d='M4 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1' />
+                            <path d='M8 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1' />
                         </svg>
                         JSON
                     </div>
@@ -48,7 +46,6 @@ function fetchData(collectionName, count, currentPage = 1) {
                 const contentTd = document.createElement('td');
                 contentTd.className = 'hidden px-1 py-2 border-b sm:p-3 border-main md:table-cell';
 
-                // Check if doc has length greater than 5 for content display
                 if (doc.length > 5) {
                     contentTd.innerHTML = `<code>${JSON.stringify(doc)}</code>`;
                 } else {
@@ -59,18 +56,15 @@ function fetchData(collectionName, count, currentPage = 1) {
                 dateAddedTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
                 dateAddedTd.textContent = new Date().toLocaleString();
 
-                // Append table cells to table row
                 tr.appendChild(fileTypeTd);
                 tr.appendChild(idTd);
                 tr.appendChild(contentTd);
                 tr.appendChild(dateAddedTd);
 
-                // Add event listener to idTd for fetching document details
                 idTd.addEventListener('click', () => {
                     fetchDocumentDetails(collectionName, doc.id);
                 });
 
-                // Append table row to records table
                 recordsTable.appendChild(tr);
             });
         })
@@ -86,12 +80,12 @@ function fetchDocumentDetails(collectionName, documentId) {
             const collectionContent = document.getElementById('collectionContent');
 
             const documentDetails = `
-                <p class="mb-2">ID: <span class="text-gray-500">${documentId || 'N/A'}</span></p>
-                <p class="mb-2">Fetched In: <span class="text-gray-500">${data._resp || 'N/A'}</span></p>
+                <p class='mb-2'>ID: <span class='text-secondary'>${documentId || 'N/A'}</span></p>
+                <p class='mb-2'>Fetched In: <span class='text-secondary'>${data._resp || 'N/A'}</span></p>
 
-                <textarea id="dataTextArea" style="width: 100%; min-height: 200px;" class="bg-secondary font-mono rounded-md p-4 border-none outline-none active:border-none active:outline-none mb-4">${JSON.stringify(data.data, null, 2) || ''}</textarea>
+                <textarea id='dataTextArea' style='width: 100%; min-height: 200px;' class='bg-main font-mono rounded-md p-4 border-none outline-none active:border-none active:outline-none mb-4'>${JSON.stringify(data.data, null, 2) || ''}</textarea>
                 
-                <button onclick="validateAndPost('${collectionName}', '${documentId}')" class="btn w-full mt-4 bg-secondary border-main px-4 py-2 rounded-md text-white hover:bg-primary hover:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50">
+                <button onclick='validateAndPost("${collectionName}", "${documentId}")' class='btn w-full mt-4 bg-main border-main px-4 py-2 rounded-md text-white hover:bg-primary hover:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50'>
                     Update Document
                 </button>
             `;
@@ -189,18 +183,17 @@ fetch('/api/v1/docs/collections')
         console.error('Error fetching data:', error);
     });
 
-document.addEventListener("DOMContentLoaded", () => {
-    const wrapper = document.querySelector(".wrapper");
-    const toggleButton = document.getElementById("side-panel-toggle");
+document.addEventListener('DOMContentLoaded', () => {
+    const wrapper = document.querySelector('.wrapper');
+    const toggleButton = document.getElementById('side-panel-toggle');
 
-    wrapper.classList.remove("side-panel-open");
+    wrapper.classList.remove('side-panel-open');
 
-    toggleButton.addEventListener("click", () => {
-        wrapper.classList.toggle("side-panel-open");
+    toggleButton.addEventListener('click', () => {
+        wrapper.classList.toggle('side-panel-open');
     });
 });
 
-// Update event listeners for pagination buttons
 document.getElementById('prevPage').addEventListener('click', () => {
     if (page > 1) {
         page -= 1;

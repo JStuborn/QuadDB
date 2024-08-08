@@ -108,7 +108,7 @@ function applyDecorators(Constructor, protoDecorators, staticDecorators) {
                 this.wrapper.classList.add("sn-notify");
                 this.wrapper.style.backgroundColor = this.backgroundColor;
                 this.wrapper.style.transitionDuration = this.speed + "ms";
-                this.wrapper.innerHTML = "<div class=\"sn-notify-content\">" + (this.title ? "<div class=\"sn-notify-title\">" + this.title.trim() + "</div>" : "") + (this.text ? "<div class=\"sn-notify-text\">" + this.text.trim() + "</div>" : "") + "</div>";
+                this.wrapper.innerHTML = "<div class=\"sn-notify-content\">" + (this.title ? "<div class=\"sn-notify-title\">" + this.title.trim() + "</div>" : "") + (this.text ? "<div class=\"sn-notify-text text-white\">" + this.text.trim() + "</div>" : "") + "</div>";
 
                 this.container.prepend(this.wrapper);
             }

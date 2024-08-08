@@ -133,15 +133,22 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			dbFile := filepath.Join(dataDir, dbName+".qdb")
 			db := database.LoadDB(dbFile, aesKey)
 
-			field := c.Query("field")
-			value := c.Query("value")
+			// Extract query parameters
+			queryParams := c.Request.URL.Query()
 
-			if field == "" || value == "" {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Field and value parameters are required"})
+			if len(queryParams) == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "At least one field-value pair is required"})
 				return
 			}
 
-			matchingDocuments, err := db.FetchDocumentsByFieldValue(field, value)
+			fieldValues := make(map[string]string)
+			for field, values := range queryParams {
+				if len(values) > 0 {
+					fieldValues[field] = values[0] // Only consider the first value for each field
+				}
+			}
+
+			matchingDocuments, err := db.FetchDocumentsByFieldValues(fieldValues)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -156,10 +163,13 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 				allDocuments = append(allDocuments, document)
 			}
 
-			endTime := time.Now()
-			elapsedTime := endTime.Sub(startTime)
+			elapsedTime := time.Since(startTime)
 
-			c.JSON(http.StatusOK, gin.H{"_resp": elapsedTime.String(), "_num": len(allDocuments), "documents": allDocuments})
+			c.JSON(http.StatusOK, gin.H{
+				"_resp":     elapsedTime.String(),
+				"_num":      len(allDocuments),
+				"documents": allDocuments,
+			})
 		})
 
 		api.GET("/docs/:db/:key", func(c *gin.Context) {
