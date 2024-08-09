@@ -130,8 +130,7 @@ func SetupRoutes(router *gin.Engine, dataDir string, aesKey []byte) {
 			startTime := time.Now()
 
 			dbName := c.Param("db")
-			dbFile := filepath.Join(dataDir, dbName+".qdb")
-			db := database.LoadDB(dbFile, aesKey)
+			db := databases[dbName] // Use the loaded database
 
 			// Extract query parameters
 			queryParams := c.Request.URL.Query()
