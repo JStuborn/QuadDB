@@ -36,6 +36,7 @@ func LoadDB(filename string, aesKey []byte) *Database {
 		filename:   filename,
 		aesKey:     aesKey,
 		fieldIndex: make(map[string]map[string][]string), // Ensure fieldIndex is initialized
+		indexLock:  sync.RWMutex{},                       // Ensure indexLock is initialized
 	}
 
 	// Load existing documents and build indexes
@@ -343,9 +344,12 @@ func (db *Database) unpadData(data []byte) []byte {
 // WHAT THE FUCK IS A KOLOMITORRR 🦅🦅
 // FetchDocumentsByFieldValues returns documents matching specified field-value pairs
 func (db *Database) FetchDocumentsByFieldValues(fieldValues map[string]string) (map[string]json.RawMessage, error) {
-	// Check if the database is properly initialized
-	if db == nil || db.fieldIndex == nil {
-		return nil, fmt.Errorf("database or fieldIndex is not initialized")
+	// Detailed logging for debugging
+	if db == nil {
+		return nil, fmt.Errorf("database instance is nil")
+	}
+	if db.fieldIndex == nil {
+		return nil, fmt.Errorf("fieldIndex map is not initialized")
 	}
 
 	db.indexLock.RLock()
