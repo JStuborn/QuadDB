@@ -35,11 +35,14 @@ func LoadDB(filename string, aesKey []byte) *Database {
 	db := &Database{
 		filename:   filename,
 		aesKey:     aesKey,
-		fieldIndex: make(map[string]map[string][]string),
+		fieldIndex: make(map[string]map[string][]string), // Ensure fieldIndex is initialized
 	}
 
 	// Load existing documents and build indexes
-	db.buildIndex()
+	err := db.buildIndex()
+	if err != nil {
+		fmt.Printf("Error building index: %v\n", err)
+	}
 
 	return db
 }
@@ -340,6 +343,11 @@ func (db *Database) unpadData(data []byte) []byte {
 // WHAT THE FUCK IS A KOLOMITORRR 🦅🦅
 // FetchDocumentsByFieldValues returns documents matching specified field-value pairs
 func (db *Database) FetchDocumentsByFieldValues(fieldValues map[string]string) (map[string]json.RawMessage, error) {
+	// Check if the database is properly initialized
+	if db == nil || db.fieldIndex == nil {
+		return nil, fmt.Errorf("database or fieldIndex is not initialized")
+	}
+
 	db.indexLock.RLock()
 	defer db.indexLock.RUnlock()
 
