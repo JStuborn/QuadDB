@@ -87,8 +87,7 @@
                     <div class="flex items-center w-full">
                         <div class="flex items-center text-3xl text-white">
                             <span id="collection_title">Select a collection to view its records.</span>
-                            <span class="ml-2 text-sm">(Fetched collection in <span
-                                    id="collection_fetch_time">0ms</span>)</span>
+                            <span class="ml-2 text-sm">(Fetched collection in <span id="collection_fetch_time">0ms</span>)</span>
                         </div>
                         <div class="hidden justify-end items-center ml-auto sm:flex">
                             <div class="text-right">
@@ -155,13 +154,7 @@
                     </div>
                     <table class="w-full text-left" id="records">
                         <thead>
-                            <tr class="text-gray-400">
-                                <th class="px-3 pt-0 pb-3 font-normal border-b border-main">Type</th>
-                                <th class="px-3 pt-0 pb-3 font-normal border-b border-main">ID</th>
-                                <th class="px-3 pt-0 pb-3 font-normal border-b border-main">Content</th>
-                                <th class="px-3 pt-0 pb-3 font-normal text-white border-b border-main sm:text-gray-400">Date
-                                    Added</th>
-                            </tr>
+                            <tr class="text-gray-400" id="table-header"></tr>
                         </thead>
                         <tbody class="text-gray-100" id="table-body"></tbody>
                     </table>

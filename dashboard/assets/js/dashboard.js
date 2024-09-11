@@ -12,6 +12,7 @@ function fetchData(collectionName, count, currentPage = 1) {
             const recCount = document.getElementById('record_count');
             const collectionsTitle = document.getElementById('collection_title');
             const pageCount = document.getElementById('page_count');
+            const tableHeader = document.getElementById('table-header');
 
             totalPages = Math.ceil(count / 5);
 
@@ -20,51 +21,57 @@ function fetchData(collectionName, count, currentPage = 1) {
             respTime.innerText = data._resp;
             recCount.innerText = count;
             recordsTable.innerHTML = '';
+            tableHeader.innerHTML = ''; // Clear previous headers
 
+            if (data.documents.length > 0) {
+                // Extract the first document's keys to generate table headers
+                const firstDoc = data.documents[0].data;
+                const headers = Object.keys(firstDoc);
+
+                // Create table header dynamically
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.className = 'px-1 py-2 border-b sm:p-3 border-main';
+                    th.textContent = header;
+                    tableHeader.appendChild(th);
+                });
+
+                // Add an extra column for the ID field
+                const idHeader = document.createElement('th');
+                idHeader.className = 'px-1 py-2 border-b sm:p-3 border-main';
+                idHeader.textContent = 'ID';
+                tableHeader.appendChild(idHeader);
+            }
+
+            // Populate table rows with document data
             data.documents.forEach(doc => {
                 const tr = document.createElement('tr');
                 tr.id = `record-${doc.id}`;
 
-                const fileTypeTd = document.createElement('td');
-                fileTypeTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
-                fileTypeTd.innerHTML = `
-                    <div class='flex items-center'>
-                        <svg class='p-1.5 mr-2.5 w-7 h-7 rounded-lg border border-main bg-sec' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-file-json-2'>
-                            <path d='M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4' />
-                            <path d='M14 2v4a2 2 0 0 0 2 2h4' />
-                            <path d='M4 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1' />
-                            <path d='M8 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1' />
-                        </svg>
-                        JSON
-                    </div>
-                `;
+                // Loop through each key-value pair in the document's data
+                Object.values(doc.data).forEach(value => {
+                    const td = document.createElement('td');
+                    td.className = 'px-1 py-2 border-b sm:p-3 border-main';
 
+                    // Check if the value is an array (e.g., phone numbers)
+                    if (Array.isArray(value)) {
+                        td.innerHTML = `<code>${value.join(', ')}</code>`;
+                    } else {
+                        td.innerHTML = `<code>${value}</code>`;
+                    }
+
+                    tr.appendChild(td);
+                });
+
+                // Add the document ID in a separate column
                 const idTd = document.createElement('td');
                 idTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
                 idTd.textContent = doc.id;
 
-                const contentTd = document.createElement('td');
-                contentTd.className = 'hidden px-1 py-2 border-b sm:p-3 border-main md:table-cell';
-
-                if (doc.length > 5) {
-                    contentTd.innerHTML = `<code>${JSON.stringify(doc)}</code>`;
-                } else {
-                    contentTd.innerHTML = `<code>${Object.keys(doc.data).length}</code>`;
-                }
-
-                const dateAddedTd = document.createElement('td');
-                dateAddedTd.className = 'px-1 py-2 border-b sm:p-3 border-main';
-                dateAddedTd.textContent = new Date().toLocaleString();
-
-                tr.appendChild(fileTypeTd);
+                // Append the ID to the row
                 tr.appendChild(idTd);
-                tr.appendChild(contentTd);
-                tr.appendChild(dateAddedTd);
 
-                idTd.addEventListener('click', () => {
-                    fetchDocumentDetails(collectionName, doc.id);
-                });
-
+                // Append the complete row to the table body
                 recordsTable.appendChild(tr);
             });
         })
